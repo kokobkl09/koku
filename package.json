@@ -1,7 +1,7 @@
 {
   "name": "koku-ai",
   "version": "5.0.0",
-  "description": "KOKU AI – ML Pipeline with Telegram Bot",
+  "description": "KOKU AI – Full ML Pipeline with Telegram Bot",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
