@@ -1,7 +1,5 @@
 node_modules/
-data.sqlite
-*.log
-backup.zip
-temp.log
-.DS_Store
+data/*.json
 .env
+.DS_Store
+*.log
