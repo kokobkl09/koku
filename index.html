@@ -5,12 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>StreakAI · Adaptive Intelligence</title>
   <style>
-    /* ─────────── RESET & BASE ─────────── */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    /* ─── RESET & BASE ─── */
+    * { margin:0; padding:0; box-sizing:border-box; }
     body {
       background: radial-gradient(circle at 20% 30%, #0d0d1a, #03030a);
       font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
@@ -28,11 +24,10 @@
       grid-template-columns: 220px 1fr;
       gap: 24px;
     }
-    /* ─── Sidebar ─── */
+    /* ─── SIDEBAR ─── */
     .sidebar {
-      background: rgba(18, 18, 24, 0.8);
+      background: rgba(18,18,24,0.8);
       backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
       border-radius: 28px;
       padding: 24px 16px;
       border: 1px solid rgba(255,255,255,0.06);
@@ -51,12 +46,7 @@
       background-clip: text;
       letter-spacing: -0.5px;
     }
-    .logo span {
-      font-size: 12px;
-      display: block;
-      -webkit-text-fill-color: rgba(255,255,255,0.4);
-      font-weight: 400;
-    }
+    .logo span { font-size:12px; display:block; -webkit-text-fill-color:rgba(255,255,255,0.4); font-weight:400; }
     .sidebar nav a {
       display: block;
       padding: 10px 14px;
@@ -69,8 +59,7 @@
       cursor: pointer;
       text-decoration: none;
     }
-    .sidebar nav a:hover,
-    .sidebar nav a.active {
+    .sidebar nav a:hover, .sidebar nav a.active {
       background: rgba(255,255,255,0.06);
       color: #fff;
     }
@@ -93,18 +82,14 @@
       animation: pulse 1.5s infinite;
     }
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
+      0%,100% { opacity:1; }
+      50% { opacity:0.3; }
     }
 
-    /* ─── Main ─── */
-    .main {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
+    /* ─── MAIN ─── */
+    .main { display:flex; flex-direction:column; gap:20px; }
     .topbar {
-      background: rgba(18, 18, 24, 0.8);
+      background: rgba(18,18,24,0.8);
       backdrop-filter: blur(14px);
       border-radius: 28px;
       padding: 14px 24px;
@@ -115,30 +100,14 @@
       align-items: center;
       gap: 10px;
     }
-    .topbar .page-title {
-      font-size: 18px;
-      font-weight: 600;
-    }
-    .topbar .page-title small {
-      font-weight: 400;
-      color: #a8a8b3;
-      font-size: 13px;
-      margin-left: 8px;
-    }
-    .topbar .status-line {
-      display: flex;
-      gap: 16px;
-      font-size: 13px;
-      color: #a8a8b3;
-      align-items: center;
-    }
-    .topbar .status-line .online {
-      color: #34d399;
-    }
+    .topbar .page-title { font-size:18px; font-weight:600; }
+    .topbar .page-title small { font-weight:400; color:#a8a8b3; font-size:13px; margin-left:8px; }
+    .topbar .status-line { display:flex; gap:16px; font-size:13px; color:#a8a8b3; align-items:center; }
+    .topbar .status-line .online { color:#34d399; }
 
-    /* ─── Cards ─── */
+    /* ─── CARDS ─── */
     .card {
-      background: rgba(18, 18, 24, 0.7);
+      background: rgba(18,18,24,0.7);
       backdrop-filter: blur(12px);
       border-radius: 28px;
       padding: 20px 24px;
@@ -154,43 +123,26 @@
       margin-bottom: 14px;
     }
 
-    /* ─── Prediction Hero ─── */
+    /* ─── PREDICTION HERO ─── */
     .prediction-hero {
-      background: linear-gradient(145deg, rgba(26, 26, 36, 0.9), rgba(18, 18, 24, 0.9));
+      background: linear-gradient(145deg, rgba(26,26,36,0.9), rgba(18,18,24,0.9));
       backdrop-filter: blur(12px);
       text-align: center;
       padding: 30px 20px 24px;
       border-radius: 28px;
       border: 1px solid rgba(255,255,255,0.06);
     }
-    .prediction-hero .period {
-      font-size: 14px;
-      color: #a8a8b3;
-    }
+    .prediction-hero .period { font-size:14px; color:#a8a8b3; }
     .prediction-hero .prediction-value {
       font-size: 72px;
       font-weight: 800;
       letter-spacing: 4px;
       margin: 10px 0 4px;
     }
-    .prediction-hero .prediction-value.big {
-      color: #ff5252;
-      text-shadow: 0 0 40px rgba(255, 82, 82, 0.25);
-    }
-    .prediction-hero .prediction-value.small {
-      color: #00b0ff;
-      text-shadow: 0 0 40px rgba(0, 176, 255, 0.25);
-    }
-    .prediction-hero .prediction-value.no-bet {
-      color: #fbbf24;
-      text-shadow: 0 0 40px rgba(251, 191, 36, 0.2);
-    }
-    .prediction-hero .prediction-number {
-      font-size: 32px;
-      font-weight: 600;
-      margin-bottom: 12px;
-      color: #e0e7ff;
-    }
+    .prediction-hero .prediction-value.big { color:#ff5252; text-shadow:0 0 40px rgba(255,82,82,0.25); }
+    .prediction-hero .prediction-value.small { color:#00b0ff; text-shadow:0 0 40px rgba(0,176,255,0.25); }
+    .prediction-hero .prediction-value.no-bet { color:#fbbf24; text-shadow:0 0 40px rgba(251,191,36,0.2); }
+    .prediction-hero .prediction-number { font-size:32px; font-weight:600; margin-bottom:12px; color:#e0e7ff; }
     .confidence-row {
       display: flex;
       justify-content: center;
@@ -198,23 +150,12 @@
       flex-wrap: wrap;
       margin-top: 8px;
     }
-    .conf-item {
-      text-align: center;
-      min-width: 80px;
-    }
-    .conf-item .label {
-      font-size: 11px;
-      color: #a8a8b3;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .conf-item .value {
-      font-size: 24px;
-      font-weight: 700;
-    }
-    .conf-item .value.high { color: #34d399; }
-    .conf-item .value.medium { color: #fbbf24; }
-    .conf-item .value.low { color: #ff5252; }
+    .conf-item { text-align:center; min-width:80px; }
+    .conf-item .label { font-size:11px; color:#a8a8b3; text-transform:uppercase; letter-spacing:0.5px; }
+    .conf-item .value { font-size:24px; font-weight:700; }
+    .conf-item .value.high { color:#34d399; }
+    .conf-item .value.medium { color:#fbbf24; }
+    .conf-item .value.low { color:#ff5252; }
     .progress-bar {
       width: 100%;
       height: 6px;
@@ -229,7 +170,7 @@
       transition: width 0.3s;
     }
 
-    /* ─── Stats Grid ─── */
+    /* ─── STATS GRID ─── */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -242,26 +183,14 @@
       padding: 12px 10px;
       text-align: center;
     }
-    .stat-item .num {
-      font-size: 26px;
-      font-weight: 700;
-    }
-    .stat-item .num.win { color: #34d399; }
-    .stat-item .num.loss { color: #ff5252; }
-    .stat-item .num.evidence { color: #fbbf24; }
-    .stat-item .label {
-      font-size: 10px;
-      color: #a8a8b3;
-      text-transform: uppercase;
-      margin-top: 2px;
-    }
+    .stat-item .num { font-size:26px; font-weight:700; }
+    .stat-item .num.win { color:#34d399; }
+    .stat-item .num.loss { color:#ff5252; }
+    .stat-item .num.evidence { color:#fbbf24; }
+    .stat-item .label { font-size:10px; color:#a8a8b3; text-transform:uppercase; margin-top:2px; }
 
-    /* ─── Strategy Pills ─── */
-    .strategy-pills {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
+    /* ─── STRATEGY PILLS ─── */
+    .strategy-pills { display:flex; flex-wrap:wrap; gap:8px; }
     .strategy-pills .pill {
       background: rgba(255,255,255,0.04);
       padding: 4px 12px;
@@ -286,16 +215,10 @@
       border-radius: 4px;
       transition: width 0.3s;
     }
-    .strategy-pills .pill.best {
-      border-color: #fbbf24;
-      background: rgba(251,191,36,0.08);
-    }
-    .strategy-pills .pill.retired {
-      opacity: 0.4;
-      border-color: #ff5252;
-    }
+    .strategy-pills .pill.best { border-color:#fbbf24; background:rgba(251,191,36,0.08); }
+    .strategy-pills .pill.retired { opacity:0.4; border-color:#ff5252; }
 
-    /* ─── Market Badges ─── */
+    /* ─── MARKET BADGES ─── */
     .market-badge {
       background: rgba(255,255,255,0.04);
       padding: 4px 14px;
@@ -305,10 +228,7 @@
       display: inline-block;
       margin: 2px;
     }
-    .market-badge.active {
-      border-color: #60a5fa;
-      background: rgba(96,165,250,0.1);
-    }
+    .market-badge.active { border-color:#60a5fa; background:rgba(96,165,250,0.1); }
     .regime-indicator {
       display: inline-block;
       padding: 4px 12px;
@@ -316,13 +236,13 @@
       font-size: 12px;
       font-weight: 600;
     }
-    .regime-trending { background: rgba(52,211,153,0.15); color: #34d399; }
-    .regime-volatile { background: rgba(255,82,82,0.15); color: #ff5252; }
-    .regime-random { background: rgba(251,191,36,0.15); color: #fbbf24; }
-    .regime-cyclic { background: rgba(96,165,250,0.15); color: #60a5fa; }
-    .regime-normal { background: rgba(255,255,255,0.05); color: #a8a8b3; }
+    .regime-trending { background:rgba(52,211,153,0.15); color:#34d399; }
+    .regime-volatile { background:rgba(255,82,82,0.15); color:#ff5252; }
+    .regime-random { background:rgba(251,191,36,0.15); color:#fbbf24; }
+    .regime-cyclic { background:rgba(96,165,250,0.15); color:#60a5fa; }
+    .regime-normal { background:rgba(255,255,255,0.05); color:#a8a8b3; }
 
-    /* ─── Explanation Box ─── */
+    /* ─── EXPLANATION BOX ─── */
     .explanation-box {
       background: rgba(0,0,0,0.3);
       border-radius: 16px;
@@ -337,7 +257,7 @@
       border: 1px solid rgba(255,255,255,0.04);
     }
 
-    /* ─── History Table ─── */
+    /* ─── HISTORY TABLE ─── */
     .history-wrap {
       overflow-x: auto;
       max-height: 260px;
@@ -358,14 +278,11 @@
       top: 0;
       background: rgba(18,18,24,0.95);
     }
-    .history-wrap td {
-      padding: 6px 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-    }
-    .history-wrap .win { color: #34d399; }
-    .history-wrap .loss { color: #ff5252; }
+    .history-wrap td { padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.04); }
+    .history-wrap .win { color:#34d399; }
+    .history-wrap .loss { color:#ff5252; }
 
-    /* ─── Buttons ─── */
+    /* ─── BUTTONS ─── */
     .btn {
       background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.08);
@@ -380,26 +297,21 @@
       align-items: center;
       gap: 6px;
     }
-    .btn:hover { background: rgba(255,255,255,0.12); transform: translateY(-2px); }
-    .btn:active { transform: scale(0.96); }
-    .btn-big { background: linear-gradient(145deg, #10b981, #059669); border-color: #34d399; }
-    .btn-big:hover { box-shadow: 0 6px 30px rgba(52,211,153,0.25); }
-    .btn-small { background: linear-gradient(145deg, #ef4444, #dc2626); border-color: #f87171; }
-    .btn-small:hover { box-shadow: 0 6px 30px rgba(248,113,113,0.25); }
-    .btn-danger { background: rgba(255,82,82,0.2); border-color: #ff5252; }
-    .btn-danger:hover { background: rgba(255,82,82,0.3); }
-    .btn-primary { background: rgba(96,165,250,0.2); border-color: #60a5fa; }
-    .btn-primary:hover { background: rgba(96,165,250,0.3); }
-    .btn-resend { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
-    .btn-resend:hover { background: rgba(167,139,250,0.25); }
-    .flex-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
-    }
+    .btn:hover { background:rgba(255,255,255,0.12); transform:translateY(-2px); }
+    .btn:active { transform:scale(0.96); }
+    .btn-big { background:linear-gradient(145deg,#10b981,#059669); border-color:#34d399; }
+    .btn-big:hover { box-shadow:0 6px 30px rgba(52,211,153,0.25); }
+    .btn-small { background:linear-gradient(145deg,#ef4444,#dc2626); border-color:#f87171; }
+    .btn-small:hover { box-shadow:0 6px 30px rgba(248,113,113,0.25); }
+    .btn-danger { background:rgba(255,82,82,0.2); border-color:#ff5252; }
+    .btn-danger:hover { background:rgba(255,82,82,0.3); }
+    .btn-primary { background:rgba(96,165,250,0.2); border-color:#60a5fa; }
+    .btn-primary:hover { background:rgba(96,165,250,0.3); }
+    .btn-resend { background:rgba(167,139,250,0.15); border-color:#a78bfa; color:#c4b5fd; }
+    .btn-resend:hover { background:rgba(167,139,250,0.25); }
+    .flex-row { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
 
-    /* ─── Toast ─── */
+    /* ─── TOAST ─── */
     .toast-container {
       position: fixed;
       bottom: 30px;
@@ -426,25 +338,19 @@
       animation: slideUp 0.4s ease, fadeOut 0.5s ease 3s forwards;
     }
     @keyframes slideUp {
-      0% { opacity: 0; transform: translateY(20px); }
-      100% { opacity: 1; transform: translateY(0); }
+      0% { opacity:0; transform:translateY(20px); }
+      100% { opacity:1; transform:translateY(0); }
     }
     @keyframes fadeOut {
-      0% { opacity: 1; }
-      100% { opacity: 0; transform: translateY(-10px); }
+      0% { opacity:1; }
+      100% { opacity:0; transform:translateY(-10px); }
     }
 
-    /* ─── Responsive ─── */
-    .sidebar-mobile {
-      display: none;
-    }
-    @media (max-width: 1024px) {
-      .app {
-        grid-template-columns: 1fr;
-      }
-      .sidebar {
-        display: none;
-      }
+    /* ─── RESPONSIVE ─── */
+    .sidebar-mobile { display:none; }
+    @media (max-width:1024px) {
+      .app { grid-template-columns:1fr; }
+      .sidebar { display:none; }
       .sidebar-mobile {
         display: flex;
         flex-wrap: wrap;
@@ -465,15 +371,12 @@
         border: 1px solid transparent;
         cursor: pointer;
       }
-      .sidebar-mobile a.active {
-        border-color: #60a5fa;
-        color: #fff;
-      }
+      .sidebar-mobile a.active { border-color:#60a5fa; color:#fff; }
     }
-    @media (max-width: 600px) {
-      .prediction-hero .prediction-value { font-size: 48px; }
-      .stats-grid { grid-template-columns: repeat(3, 1fr); }
-      .confidence-row { gap: 16px; }
+    @media (max-width:600px) {
+      .prediction-hero .prediction-value { font-size:48px; }
+      .stats-grid { grid-template-columns:repeat(3,1fr); }
+      .confidence-row { gap:16px; }
     }
   </style>
 </head>
@@ -521,7 +424,6 @@
 
     <!-- Dashboard Page -->
     <section id="page-dashboard">
-
       <div class="prediction-hero">
         <div class="period" id="currentPeriodLabel">Loading...</div>
         <div class="prediction-value no-bet" id="predictionDisplay">NO BET</div>
@@ -664,12 +566,12 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  FRONTEND – Communicates with SendGrid backend
-//  No Resend, no direct email – all via /alert endpoint
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// FINAL FRONTEND – Communicates with the backend server
+// Always use relative URLs (assumes same origin)
+// ============================================================
 
-(() => {
+(function() {
   'use strict';
 
   // ─── DOM helpers ───
@@ -708,73 +610,30 @@
     if (page === 'analytics') fetchAnalytics();
   }
 
-  // ─── API calls ───
-  const API_BASE = window.location.origin; // assumes same server
-
-  async function fetchStatus() {
+  // ─── API calls (relative URLs) ───
+  async function fetchPrediction() {
     try {
-      const res = await fetch(`${API_BASE}/prediction`);
+      const res = await fetch('/prediction');
       if (!res.ok) throw new Error('Failed to fetch prediction');
       const data = await res.json();
       updatePredictionUI(data);
+      return data;
     } catch (e) {
-      console.warn('Status fetch error:', e);
+      console.warn('Prediction fetch error:', e);
+      return null;
     }
   }
 
   async function fetchFullStatus() {
     try {
-      const res = await fetch(`${API_BASE}/status`);
-      if (!res.ok) throw new Error('Failed to fetch full status');
+      const res = await fetch('/status');
+      if (!res.ok) throw new Error('Failed to fetch status');
       const data = await res.json();
       updateFullStatusUI(data);
+      return data;
     } catch (e) {
-      console.warn('Full status fetch error:', e);
-    }
-  }
-
-  async function fetchHistory() {
-    try {
-      const res = await fetch(`${API_BASE}/status`);
-      if (!res.ok) throw new Error('Failed to fetch history');
-      const data = await res.json();
-      // data.predictions should be available
-      updateHistoryTables(data.predictions || []);
-    } catch (e) {
-      console.warn('History fetch error:', e);
-    }
-  }
-
-  async function fetchFullHistory() {
-    try {
-      const res = await fetch(`${API_BASE}/status`);
-      if (!res.ok) throw new Error('Failed to fetch full history');
-      const data = await res.json();
-      renderFullHistory(data.predictions || []);
-    } catch (e) {
-      console.warn('Full history fetch error:', e);
-    }
-  }
-
-  async function fetchLearningStats() {
-    try {
-      const res = await fetch(`${API_BASE}/status`);
-      if (!res.ok) throw new Error('Failed to fetch learning stats');
-      const data = await res.json();
-      updateLearningUI(data);
-    } catch (e) {
-      console.warn('Learning fetch error:', e);
-    }
-  }
-
-  async function fetchAnalytics() {
-    try {
-      const res = await fetch(`${API_BASE}/status`);
-      if (!res.ok) throw new Error('Failed to fetch analytics');
-      const data = await res.json();
-      updateAnalyticsUI(data);
-    } catch (e) {
-      console.warn('Analytics fetch error:', e);
+      console.warn('Status fetch error:', e);
+      return null;
     }
   }
 
@@ -886,6 +745,18 @@
     setHTML('historyFull', render(predictions));
   }
 
+  function fetchFullHistory() {
+    fetchFullStatus().then(data => {
+      if (data) renderFullHistory(data.predictions || []);
+    });
+  }
+
+  function fetchLearningStats() {
+    fetchFullStatus().then(data => {
+      if (data) updateLearningUI(data);
+    });
+  }
+
   function updateLearningUI(data) {
     const stats = data.strategyStats || {};
     const active = Object.keys(stats).filter(k => !stats[k].retired);
@@ -899,7 +770,6 @@
     `;
     setHTML('learningStats', html);
 
-    // Rules and patterns (if available in full status)
     const rules = data.rules || [];
     const rulesHtml = rules.filter(r => r.active).slice(0, 15).map(r =>
       `<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="color:#fbbf24;">${r.condition}</span> → ${r.action} <span style="color:#a8a8b3;font-size:11px;">ev:${(r.evidence*100).toFixed(0)}%</span></div>`
@@ -911,6 +781,12 @@
       `<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="color:#60a5fa;">${p.key}</span> → ${p.nextBig > p.nextSmall ? 'BIG' : 'SMALL'} <span style="color:#a8a8b3;font-size:11px;">conf:${(p.confidence*100).toFixed(0)}%</span></div>`
     ).join('');
     setHTML('patternList', patHtml || '<div style="color:#a8a8b3;">No patterns.</div>');
+  }
+
+  function fetchAnalytics() {
+    fetchFullStatus().then(data => {
+      if (data) updateAnalyticsUI(data);
+    });
   }
 
   function updateAnalyticsUI(data) {
@@ -947,7 +823,7 @@
 
   async function addOutcome(outcome) {
     try {
-      const res = await fetch(`${API_BASE}/outcome`, {
+      const res = await fetch('/outcome', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ outcome })
@@ -955,7 +831,8 @@
       if (!res.ok) throw new Error('Failed to add outcome');
       const data = await res.json();
       showToast(`✅ Added ${outcome}`);
-      fetchStatus();
+      // Refresh all data
+      fetchPrediction();
       fetchFullStatus();
     } catch (e) {
       showToast('❌ Error adding outcome');
@@ -963,16 +840,9 @@
     }
   }
 
-  async function forcePrediction() {
-    // Just refresh status
-    await fetchStatus();
-    await fetchFullStatus();
-    showToast('🔄 Updated');
-  }
-
   async function sendResend() {
     try {
-      const res = await fetch(`${API_BASE}/alert`, { method: 'POST' });
+      const res = await fetch('/alert', { method: 'POST' });
       if (!res.ok) throw new Error('Failed to send alert');
       showToast('📧 Alert sent!');
     } catch (e) {
@@ -984,15 +854,55 @@
   async function resetAll() {
     if (!confirm('Reset all data? This cannot be undone.')) return;
     try {
-      const res = await fetch(`${API_BASE}/reset`, { method: 'POST' });
+      const res = await fetch('/reset', { method: 'POST' });
       if (!res.ok) throw new Error('Reset failed');
       showToast('🔄 Reset complete');
-      // Refresh everything
-      fetchStatus();
+      fetchPrediction();
       fetchFullStatus();
     } catch (e) {
       showToast('❌ Reset failed');
       console.error(e);
+    }
+  }
+
+  // ─── Export functions ───
+
+  async function exportJSON() {
+    try {
+      const res = await fetch('/status');
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `streakai_export_${new Date().toISOString().slice(0,19)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('💾 Export downloaded');
+    } catch (e) {
+      showToast('❌ Export failed');
+    }
+  }
+
+  async function exportCSV() {
+    try {
+      const res = await fetch('/status');
+      const data = await res.json();
+      const predictions = data.predictions || [];
+      let csv = 'Period,Prediction,Number,Actual,ActualNumber,Confidence,Risk,Regime,Strategy,Result\n';
+      for (const p of predictions) {
+        csv += `${p.period},${p.predicted},${p.number||'--'},${p.actual||'--'},${p.actualNumber||'--'},${p.confidence||'--'},${p.risk||'--'},${p.regime||'--'},${p.strategy||'--'},${p.correct===undefined?'⏳':p.correct?'WIN':'LOSS'}\n`;
+      }
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `streakai_history_${new Date().toISOString().slice(0,19)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('📊 CSV exported');
+    } catch (e) {
+      showToast('❌ CSV export failed');
     }
   }
 
@@ -1017,80 +927,41 @@
     // Buttons
     $('btnBig').addEventListener('click', () => addOutcome('BIG'));
     $('btnSmall').addEventListener('click', () => addOutcome('SMALL'));
-    $('forceBtn').addEventListener('click', forcePrediction);
+    $('forceBtn').addEventListener('click', () => {
+      fetchPrediction();
+      fetchFullStatus();
+      showToast('🔄 Refreshed');
+    });
     $('resendBtn').addEventListener('click', sendResend);
     $('resetBtn').addEventListener('click', resetAll);
+    $('exportBtn').addEventListener('click', exportJSON);
+    $('exportCsvBtn').addEventListener('click', exportCSV);
 
-    // Admin buttons (simplified)
-    $('retrainBtn').addEventListener('click', () => {
-      showToast('🔄 Retrain not implemented in UI, but engine self‑adapts.');
-    });
-    $('optimizeBtn').addEventListener('click', () => {
-      showToast('⚡ Optimization runs automatically.');
-    });
-    $('backupBtn').addEventListener('click', () => {
-      showToast('💾 Data is persisted on server.');
-    });
+    // Admin buttons (simple messages)
+    $('retrainBtn').addEventListener('click', () => showToast('🔄 Retraining is automatic.'));
+    $('optimizeBtn').addEventListener('click', () => showToast('⚡ Optimization runs continuously.'));
+    $('backupBtn').addEventListener('click', () => showToast('💾 Data is persisted on server.'));
     $('clearHistoryBtn').addEventListener('click', async () => {
       if (confirm('Clear all predictions history?')) {
-        // Reset entire engine (same as reset)
         await resetAll();
       }
     });
 
-    // Export buttons (just download from server? we'll simulate)
-    $('exportBtn').addEventListener('click', async () => {
-      try {
-        const res = await fetch(`${API_BASE}/status`);
-        const data = await res.json();
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `streakai_export_${new Date().toISOString().slice(0,19)}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        showToast('💾 Export downloaded');
-      } catch (e) {
-        showToast('❌ Export failed');
-      }
-    });
-    $('exportCsvBtn').addEventListener('click', async () => {
-      try {
-        const res = await fetch(`${API_BASE}/status`);
-        const data = await res.json();
-        const predictions = data.predictions || [];
-        let csv = 'Period,Prediction,Number,Actual,ActualNumber,Confidence,Risk,Regime,Strategy,Result\n';
-        for (const p of predictions) {
-          csv += `${p.period},${p.predicted},${p.number||'--'},${p.actual||'--'},${p.actualNumber||'--'},${p.confidence||'--'},${p.risk||'--'},${p.regime||'--'},${p.strategy||'--'},${p.correct===undefined?'⏳':p.correct?'WIN':'LOSS'}\n`;
-        }
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `streakai_history_${new Date().toISOString().slice(0,19)}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
-        showToast('📊 CSV exported');
-      } catch (e) {
-        showToast('❌ CSV export failed');
-      }
-    });
-
     // Initial fetch
-    fetchStatus();
+    fetchPrediction();
     fetchFullStatus();
 
-    // Poll every 30s for updates
+    // Auto-refresh every 30s
     setInterval(() => {
-      fetchStatus();
+      fetchPrediction();
       fetchFullStatus();
     }, 30000);
 
     startTimer();
-
-    // Navigate to dashboard
     navigate('dashboard');
+
+    // Log to console for debugging
+    console.log('✅ StreakAI frontend loaded.');
   }
 
   if (document.readyState === 'loading') {
