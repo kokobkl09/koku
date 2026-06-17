@@ -1,234 +1,370 @@
+// ============================================================
+// ADAPTIVE STREAK INTELLIGENCE ENGINE – NODE.JS BACKEND
+// - Persists history in data/history.json
+// - HTTP API: POST /outcome, GET /prediction, GET /status, POST /alert, POST /reset
+// - Resend email alerts
+// - Sends one startup email after 5 minutes
+// ============================================================
+
 const express = require('express');
+const fs = require('fs').promises;
 const path = require('path');
-const { Telegraf } = require('telegraf');
-const sqlite3 = require('sqlite3').verbose();
-const { open } = require('sqlite');
-const fs = require('fs');
-const archiver = require('archiver');
+const fetch = require('node-fetch');
 
-// ─── Config ───
-const BOT_TOKEN = process.env.BOT_TOKEN || '8998777617:AAGqM6Uy6wWNFjKJHJFWVQb8VaLzNnvyn6s';
-const ADMIN_KEY = process.env.ADMIN_KEY || '7811286022';
+// ============ CONFIGURATION ============
 const PORT = process.env.PORT || 3000;
-const API_URL = 'https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json';
+const DATA_DIR = path.join(__dirname, 'data');
+const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
 
-// ─── Express App ───
-const app = express();
-app.use(express.json());
-app.use(express.static(__dirname));
+// Resend API – use environment variable or fallback (modified key provided)
+const RESEND_API_KEY = process.env.RESEND_API_KEY || 're_3R13fyxC_6UStikC6Vsnn9RZECcqPYuUo';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jurohan38@gmail.com'; // CHANGE THIS
 
-// ─── Health Check ───
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
-});
-
-// ─── SQLite Database ───
-let db;
-(async () => {
-  try {
-    db = await open({
-      filename: path.join(__dirname, 'data.sqlite'),
-      driver: sqlite3.Database
-    });
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS predictions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        period TEXT,
-        predicted TEXT,
-        actual TEXT,
-        predicted_number INTEGER,
-        actual_number INTEGER,
-        confidence REAL,
-        strategy TEXT,
-        correct INTEGER,
-        timestamp INTEGER
-      );
-      CREATE TABLE IF NOT EXISTS users (
-        chat_id INTEGER PRIMARY KEY,
-        first_start INTEGER,
-        last_active INTEGER
-      );
-    `);
-    console.log('✅ Database ready');
-  } catch (err) {
-    console.error('❌ Database error:', err.message);
+// ============ ENGINE CLASS ============
+class StreakEngine {
+  constructor() {
+    this.history = [];
+    this.streakData = {};
+    this.totalStreakSamples = 0;
+    this.minSamples = 20;
+    this.lastResult = null;
+    this.currentStreak = 0;
+    this.currentDirection = null;
+    this.prediction = null;
+    this.confidence = 0;
+    this.evidenceScore = 0;
+    this.transitions = { BIG: { BIG: 0, SMALL: 0 }, SMALL: { BIG: 0, SMALL: 0 } };
   }
-})();
 
-// ─── Background Collector ───
-async function collectAndPredict() {
-  try {
-    const resp = await fetch(API_URL + `?t=${Date.now()}`);
-    if (!resp.ok) throw new Error('API fetch failed');
-    const json = await resp.json();
-    if (!json?.data?.list?.length) throw new Error('No data');
-
-    const rounds = json.data.list.map(item => ({
-      period: item.issueNumber,
-      number: parseInt(item.number),
-      size: parseInt(item.number) >= 5 ? 'BIG' : 'SMALL'
-    }));
-
-    const prediction = runML(rounds);
-    const latest = rounds[0];
-    const existing = await db.get('SELECT * FROM predictions WHERE period = ?', latest.period);
-    if (!existing) {
-      await db.run(
-        'INSERT INTO predictions (period, predicted, predicted_number, confidence, strategy, timestamp) VALUES (?, ?, ?, ?, ?, ?)',
-        latest.period,
-        prediction.pred,
-        prediction.number,
-        prediction.confidence,
-        prediction.strategy || 'ensemble',
-        Date.now()
-      );
-      console.log(`📊 New prediction: ${prediction.pred} (${prediction.number})`);
-    }
-
-    const prev = await db.get('SELECT * FROM predictions WHERE period != ? AND actual IS NULL ORDER BY timestamp DESC LIMIT 1', latest.period);
-    if (prev) {
-      const actualRound = rounds.find(r => r.period === prev.period);
-      if (actualRound) {
-        const correct = prev.predicted === actualRound.size ? 1 : 0;
-        await db.run(
-          'UPDATE predictions SET actual = ?, actual_number = ?, correct = ? WHERE id = ?',
-          actualRound.size,
-          actualRound.number,
-          correct,
-          prev.id
-        );
-        console.log(`✅ Validated ${prev.period}: ${prev.predicted} → ${actualRound.size} (${correct ? 'WIN' : 'LOSS'})`);
+  // Load history from file
+  async loadHistory() {
+    try {
+      const data = await fs.readFile(HISTORY_FILE, 'utf-8');
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        this.history = parsed;
+        this._rebuildFromHistory();
       }
+    } catch (err) {
+      this.history = [];
     }
-  } catch (err) {
-    console.error('Collector error:', err.message);
   }
-}
 
-function runML(rounds) {
-  if (rounds.length < 10) return { pred: 'BIG', number: 5, confidence: 50, strategy: 'fallback' };
-  const recent = rounds.slice(0, 10);
-  const bigCount = recent.filter(r => r.size === 'BIG').length;
-  const pred = bigCount >= 5 ? 'BIG' : 'SMALL';
-  const confidence = 50 + Math.abs(bigCount - 5) * 10;
-  const numbers = recent.map(r => r.number);
-  const filtered = pred === 'BIG' ? numbers.filter(n => n >= 5) : numbers.filter(n => n < 5);
-  const number = filtered.length ? mode(filtered) : (pred === 'BIG' ? 7 : 2);
-  return { pred, number, confidence: Math.min(92, confidence), strategy: 'trend' };
-}
-
-function mode(arr) {
-  if (!arr.length) return 0;
-  const freq = {};
-  let max = 0, r = arr[0];
-  for (const v of arr) { freq[v] = (freq[v] || 0) + 1; if (freq[v] > max) { max = freq[v]; r = v; } }
-  return r;
-}
-
-// ─── Run collector every 60 seconds ───
-setInterval(() => {
-  collectAndPredict().catch(err => console.error('Interval error:', err));
-}, 60000);
-// Run immediately on start
-setTimeout(collectAndPredict, 5000);
-
-// ─── API Endpoints ───
-app.get('/api/latest', async (req, res) => {
-  try {
-    const row = await db.get('SELECT * FROM predictions ORDER BY timestamp DESC LIMIT 1');
-    if (!row) return res.json({ error: 'No predictions yet' });
-    res.json({
-      period: row.period,
-      predicted: row.predicted,
-      number: row.predicted_number,
-      confidence: row.confidence,
-      strategy: row.strategy
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  // Save history to file
+  async saveHistory() {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    await fs.writeFile(HISTORY_FILE, JSON.stringify(this.history, null, 2));
   }
-});
 
-app.get('/api/history', async (req, res) => {
-  const key = req.query.key || req.headers['x-admin-key'];
-  if (key !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
-  try {
-    const rows = await db.all('SELECT * FROM predictions ORDER BY timestamp DESC');
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/api/stats', async (req, res) => {
-  const key = req.query.key || req.headers['x-admin-key'];
-  if (key !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
-  try {
-    const total = await db.get('SELECT COUNT(*) as count FROM predictions');
-    const correct = await db.get('SELECT COUNT(*) as count FROM predictions WHERE correct = 1');
-    res.json({
-      total: total.count || 0,
-      wins: correct.count || 0,
-      losses: (total.count || 0) - (correct.count || 0),
-      accuracy: total.count ? ((correct.count / total.count) * 100).toFixed(1) : 0
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ─── Telegram Bot ───
-if (BOT_TOKEN) {
-  const bot = new Telegraf(BOT_TOKEN);
-
-  bot.start(async (ctx) => {
-    const chatId = ctx.chat.id;
-    const now = Date.now();
-    await db.run('INSERT OR REPLACE INTO users (chat_id, first_start, last_active) VALUES (?, ?, ?)', chatId, now, now);
-    const stats = await db.get('SELECT COUNT(*) as total, SUM(correct) as wins FROM predictions');
-    const total = stats.total || 0;
-    const wins = stats.wins || 0;
-    const acc = total ? (wins / total * 100).toFixed(1) : 0;
-    await ctx.replyWithMarkdown(`🤖 *KOKU AI Bot Activated*\n📊 *Total Predictions:* ${total}\n✅ *Wins:* ${wins}\n🎯 *Accuracy:* ${acc}%\n⏰ _I will send you a detailed report in 5 minutes._`);
-    setTimeout(async () => {
-      await fiveMinuteReport(chatId);
-    }, 5 * 60 * 1000);
-  });
-
-  async function fiveMinuteReport(chatId) {
-    const fiveAgo = Date.now() - 5 * 60 * 1000;
-    const rows = await db.all('SELECT * FROM predictions WHERE timestamp >= ? ORDER BY timestamp ASC', fiveAgo);
-    if (!rows.length) {
-      await bot.telegram.sendMessage(chatId, '📊 *5‑Minute Report*\n\nNo predictions in the last 5 minutes.', { parse_mode: 'Markdown' });
+  _rebuildFromHistory() {
+    this.streakData = {};
+    this.totalStreakSamples = 0;
+    this.transitions = { BIG: { BIG: 0, SMALL: 0 }, SMALL: { BIG: 0, SMALL: 0 } };
+    if (this.history.length === 0) {
+      this.lastResult = null;
+      this.currentStreak = 0;
+      this.currentDirection = null;
       return;
     }
-    const total = rows.length;
-    const correct = rows.filter(r => r.correct === 1).length;
-    const accuracy = total ? (correct / total * 100).toFixed(1) : 0;
-    const first = rows[0];
-    const strategies = [...new Set(rows.map(r => r.strategy))];
-    let bestStrat = 'N/A', bestAcc = 0;
-    for (const s of strategies) {
-      const sRows = rows.filter(r => r.strategy === s);
-      const sCorrect = sRows.filter(r => r.correct === 1).length;
-      const acc = sCorrect / sRows.length * 100;
-      if (acc > bestAcc) { bestAcc = acc; bestStrat = s; }
+
+    let streakLen = 1;
+    let streakDir = this.history[0];
+    for (let i = 1; i < this.history.length; i++) {
+      const current = this.history[i];
+      if (current === streakDir) {
+        streakLen++;
+      } else {
+        this._recordStreak(streakLen, streakDir, false);
+        streakLen = 1;
+        streakDir = current;
+      }
+      const prev = this.history[i-1];
+      if (!this.transitions[prev]) this.transitions[prev] = { BIG: 0, SMALL: 0 };
+      this.transitions[prev][current] = (this.transitions[prev][current] || 0) + 1;
     }
-    await bot.telegram.sendMessage(chatId, `
-📊 *5‑Minute Report*
-📈 *Total Predictions:* ${total}
-✅ *Correct:* ${correct}
-🎯 *Accuracy:* ${accuracy}%
-🔮 *First Prediction:* ${first.period} → ${first.predicted} (actual: ${first.actual || 'waiting...'})
-🏆 *Best Strategy:* ${bestStrat} (${bestAcc.toFixed(1)}% accuracy)
-💡 *Insight:* ${accuracy > 60 ? 'Good performance!' : 'Consider adjusting strategy.'}
-    `, { parse_mode: 'Markdown' });
+
+    this.lastResult = this.history[this.history.length - 1];
+    let len = 1, dir = this.lastResult;
+    for (let i = this.history.length - 2; i >= 0; i--) {
+      if (this.history[i] === dir) len++;
+      else break;
+    }
+    this.currentStreak = len;
+    this.currentDirection = dir;
   }
 
-  bot.launch().then(() => console.log('🤖 Telegram bot started')).catch(err => console.error('Bot error:', err));
-} else {
-  console.log('⚠️ BOT_TOKEN not set – Telegram bot disabled.');
+  _recordStreak(length, direction, wasContinued) {
+    if (length === 0) return;
+    const key = length;
+    if (!this.streakData[key]) {
+      this.streakData[key] = { continuations: 0, reversals: 0 };
+    }
+    if (wasContinued) this.streakData[key].continuations++;
+    else this.streakData[key].reversals++;
+    this.totalStreakSamples++;
+  }
+
+  async addOutcome(outcome) {
+    if (outcome !== 'BIG' && outcome !== 'SMALL') return;
+
+    if (this.lastResult === outcome) {
+      this.currentStreak++;
+    } else {
+      if (this.currentStreak > 0 && this.lastResult) {
+        this._recordStreak(this.currentStreak, this.lastResult, false);
+      }
+      this.currentStreak = 1;
+      this.currentDirection = outcome;
+    }
+
+    if (this.lastResult) {
+      if (!this.transitions[this.lastResult]) this.transitions[this.lastResult] = { BIG: 0, SMALL: 0 };
+      this.transitions[this.lastResult][outcome] = (this.transitions[this.lastResult][outcome] || 0) + 1;
+    }
+
+    this.history.push(outcome);
+    this.lastResult = outcome;
+
+    await this.saveHistory();
+    this.predict();
+  }
+
+  getCurrentStreak() {
+    if (this.history.length === 0) return { length: 0, direction: null };
+    let len = 1, dir = this.history[this.history.length - 1];
+    for (let i = this.history.length - 2; i >= 0; i--) {
+      if (this.history[i] === dir) len++;
+      else break;
+    }
+    return { length: len, direction: dir };
+  }
+
+  predict() {
+    const streak = this.getCurrentStreak();
+    const length = streak.length;
+    const direction = streak.direction;
+
+    if (length === 0 || !direction) {
+      this.prediction = 'NO_BET';
+      this.confidence = 0;
+      this.evidenceScore = 0;
+      return { prediction: 'NO_BET', confidence: 0, evidence: 0 };
+    }
+
+    const data = this.streakData[length];
+    let contProb = 0.5, revProb = 0.5, sampleSize = 0;
+
+    if (data) {
+      const total = data.continuations + data.reversals;
+      if (total >= this.minSamples) {
+        contProb = data.continuations / total;
+        revProb = data.reversals / total;
+        sampleSize = total;
+      }
+    }
+
+    if (sampleSize < this.minSamples) {
+      let totalTrans = 0;
+      for (const prev of ['BIG', 'SMALL']) {
+        const t = this.transitions[prev] || { BIG: 0, SMALL: 0 };
+        totalTrans += t.BIG + t.SMALL;
+      }
+      if (totalTrans < this.minSamples) {
+        this.prediction = 'NO_BET';
+        this.confidence = 0;
+        this.evidenceScore = totalTrans;
+        return { prediction: 'NO_BET', confidence: 0, evidence: totalTrans };
+      }
+      let globalCont = 0, globalRev = 0;
+      for (const prev of ['BIG', 'SMALL']) {
+        const t = this.transitions[prev] || { BIG: 0, SMALL: 0 };
+        const same = prev === 'BIG' ? t.BIG : t.SMALL;
+        const opp = prev === 'BIG' ? t.SMALL : t.BIG;
+        globalCont += same;
+        globalRev += opp;
+      }
+      const total = globalCont + globalRev;
+      if (total < this.minSamples) {
+        this.prediction = 'NO_BET';
+        this.confidence = 0;
+        this.evidenceScore = total;
+        return { prediction: 'NO_BET', confidence: 0, evidence: total };
+      }
+      const gCont = globalCont / total;
+      const gRev = 1 - gCont;
+      const margin = Math.abs(gCont - gRev);
+      if (margin < 0.12) {
+        this.prediction = 'NO_BET';
+        this.confidence = margin * 100;
+        this.evidenceScore = total;
+        return { prediction: 'NO_BET', confidence: margin * 100, evidence: total };
+      }
+      if (gCont > gRev) this.prediction = direction;
+      else this.prediction = (direction === 'BIG' ? 'SMALL' : 'BIG');
+      this.confidence = Math.min(margin * 100, 90);
+      this.evidenceScore = total;
+      return { prediction: this.prediction, confidence: this.confidence, evidence: total };
+    }
+
+    const margin = Math.abs(contProb - revProb);
+    if (margin < 0.12) {
+      this.prediction = 'NO_BET';
+      this.confidence = margin * 100;
+      this.evidenceScore = sampleSize;
+      return { prediction: 'NO_BET', confidence: margin * 100, evidence: sampleSize };
+    }
+    if (contProb > revProb) this.prediction = direction;
+    else this.prediction = (direction === 'BIG' ? 'SMALL' : 'BIG');
+    this.confidence = Math.min(margin * 100, 95);
+    this.evidenceScore = sampleSize;
+    return { prediction: this.prediction, confidence: this.confidence, evidence: sampleSize };
+  }
+
+  getStatus() {
+    const streak = this.getCurrentStreak();
+    const pred = this.predict();
+    return {
+      totalOutcomes: this.history.length,
+      currentStreak: streak.length,
+      lastResult: this.lastResult,
+      prediction: pred.prediction,
+      confidence: Math.round(pred.confidence),
+      evidence: pred.evidence,
+      history: this.history,
+      streakData: this.streakData,
+      transitions: this.transitions
+    };
+  }
+
+  async reset() {
+    this.history = [];
+    this.streakData = {};
+    this.totalStreakSamples = 0;
+    this.lastResult = null;
+    this.currentStreak = 0;
+    this.currentDirection = null;
+    this.prediction = null;
+    this.confidence = 0;
+    this.evidenceScore = 0;
+    this.transitions = { BIG: { BIG: 0, SMALL: 0 }, SMALL: { BIG: 0, SMALL: 0 } };
+    await this.saveHistory();
+  }
 }
 
-// ─── Start Server ───
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+// ============ INITIALIZE ENGINE ============
+const engine = new StreakEngine();
+(async () => {
+  await engine.loadHistory();
+  engine.predict();
+  console.log(`🧠 Engine loaded: ${engine.history.length} outcomes`);
+})();
+
+// ============ RESEND NOTIFICATION ============
+async function sendResendAlert(message) {
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'StreakAI <notifications@yourdomain.com>', // change to your verified domain
+        to: [ADMIN_EMAIL],
+        subject: 'StreakAI Prediction Alert',
+        html: `<p><strong>${message}</strong></p><p>Time: ${new Date().toLocaleString()}</p>`
+      })
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('Resend error:', errText);
+      throw new Error(`Resend failed: ${response.status}`);
+    }
+    console.log('📧 Resend notification sent');
+    return true;
+  } catch (e) {
+    console.error('Resend error:', e.message);
+    return false;
+  }
+}
+
+// ============ EXPRESS SERVER ============
+const app = express();
+app.use(express.json());
+app.use(express.static(__dirname)); // serves index.html
+
+// Health check
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Get current prediction
+app.get('/prediction', (req, res) => {
+  const status = engine.getStatus();
+  res.json({
+    prediction: status.prediction,
+    confidence: status.confidence,
+    evidence: status.evidence,
+    currentStreak: status.currentStreak,
+    lastResult: status.lastResult,
+    totalOutcomes: status.totalOutcomes
+  });
+});
+
+// Get full debug status
+app.get('/status', (req, res) => {
+  res.json(engine.getStatus());
+});
+
+// Add new outcome
+app.post('/outcome', async (req, res) => {
+  const { outcome } = req.body;
+  if (!outcome || (outcome !== 'BIG' && outcome !== 'SMALL')) {
+    return res.status(400).json({ error: 'outcome must be "BIG" or "SMALL"' });
+  }
+  await engine.addOutcome(outcome);
+  const pred = engine.predict();
+  res.json({
+    added: outcome,
+    prediction: pred.prediction,
+    confidence: Math.round(pred.confidence),
+    evidence: pred.evidence
+  });
+});
+
+// Manual alert trigger
+app.post('/alert', async (req, res) => {
+  const status = engine.getStatus();
+  const msg = `Prediction: ${status.prediction} | Confidence: ${status.confidence}% | Streak: ${status.currentStreak} | Last: ${status.lastResult}`;
+  const sent = await sendResendAlert(msg);
+  if (sent) res.json({ success: true, message: 'Alert sent' });
+  else res.status(500).json({ success: false, error: 'Failed to send alert' });
+});
+
+// Reset
+app.post('/reset', async (req, res) => {
+  await engine.reset();
+  res.json({ success: true, message: 'Engine reset' });
+});
+
+// Start server
+const server = app.listen(PORT, async () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📧 Will send one startup email in 5 minutes...`);
+
+  // ONE‑TIME EMAIL AFTER 5 MINUTES
+  setTimeout(async () => {
+    const status = engine.getStatus();
+    const msg = `StreakAI started successfully.\nPrediction: ${status.prediction} | Confidence: ${status.confidence}% | Streak: ${status.currentStreak} | Total outcomes: ${status.totalOutcomes}`;
+    const sent = await sendResendAlert(msg);
+    if (sent) console.log('✅ Startup email sent.');
+    else console.log('❌ Startup email failed.');
+  }, 5 * 60 * 1000); // 5 minutes
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('Shutting down...');
+  await engine.saveHistory();
+  server.close(() => process.exit(0));
+});
