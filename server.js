@@ -1,27 +1,23 @@
 // ============================================================
-// STREAKAI BACKEND – ADAPTIVE ENGINE + RESEND ALERTS
-// - Includes streak-continuation rule for streaks ≥ 3
-// - Resend email alerts (your domain & API)
-// - One‑time startup email after 5 minutes
-// - Persistent storage in data/history.json
+// STREAKAI BACKEND – ADAPTIVE ENGINE + SENDGRID
 // ============================================================
 
 const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
-const fetch = require('node-fetch');
+const sgMail = require('@sendgrid/mail');
 
-// ─── CONFIG ────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.join(__dirname, 'data');
 const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
 
-// Resend credentials (set these or use environment variables)
-const RESEND_API_KEY = process.env.RESEND_API_KEY || 're_3R13fyxC_6UStikC6Vsnn9RZECcqPYuUo';
+// ─── SENDGRID ──────────────────────────────────────────────
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || 'R1F64DN8ZQJSVLJW3EJHT32B';
+sgMail.setApiKey(SENDGRID_API_KEY);
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jurohan38@gmail.com';
-const FROM_EMAIL = process.env.FROM_EMAIL || 'StreakAI <alerts@jurohan38@gmail.com>';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'jurohan38@gmail.com';
 
-// Engine constants
+// ─── ENGINE CONSTANTS ─────────────────────────────────────
 const MIN_SAMPLES = 20;
 const SIGNIFICANCE_THRESHOLD = 0.05;
 const MAX_HISTORY = 200;
@@ -177,8 +173,6 @@ class StreakEngine {
     const pBig = scoreBig / total;
     return { pred: pBig > 0.5 ? 'BIG' : 'SMALL', conf: this.clamp(Math.abs(pBig - 0.5) * 160 + 30, 30, 85) };
   }
-
-  // ─── NEW: STREAK-CONTINUATION STRATEGY ──────────────────
   stratStreakContinuation(features, currentStreak) {
     const len = currentStreak.length;
     const dir = currentStreak.direction;
@@ -493,7 +487,6 @@ class StreakEngine {
 
     if (this.lastPrediction && this.lastPeriod !== period) {
       const correct = (this.lastPrediction === outcome);
-      // update strategy evidence
       this.updateStrategyEvidence(this.lastStrategy, correct, this.lastConfidence, this.lastRegime);
       this.predictions.unshift({
         period: this.lastPeriod,
@@ -546,7 +539,7 @@ class StreakEngine {
       if (parsed.marketRegime) this.marketRegime = parsed.marketRegime;
       this.rebuildStreakData(this.history);
     } catch (err) {
-      // file doesn't exist or invalid – start fresh
+      // file doesn't exist – start fresh
     }
   }
 
@@ -587,7 +580,8 @@ class StreakEngine {
       accuracy: this.predictions.length ? (this.predictions.filter(p => p.correct).length / this.predictions.length * 100) : 0,
       patterns: this.patterns.length,
       rules: this.rules.filter(r => r.active).length,
-      strategyStats: this.strategyStats
+      strategyStats: this.strategyStats,
+      predictions: this.predictions.slice(0, 100)
     };
   }
 
@@ -631,31 +625,20 @@ const engine = new StreakEngine();
   console.log(`🧠 Engine loaded: ${engine.history.length} outcomes`);
 })();
 
-// ─── RESEND HELPER ──────────────────────────────────────────
-async function sendResendAlert(message) {
+// ─── SEND EMAIL VIA SENDGRID ──────────────────────────────
+async function sendEmail(subject, htmlContent) {
+  const msg = {
+    to: ADMIN_EMAIL,
+    from: FROM_EMAIL,          // must be verified in SendGrid
+    subject: subject,
+    html: htmlContent
+  };
   try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        from: FROM_EMAIL,
-        to: [ADMIN_EMAIL],
-        subject: 'StreakAI Prediction Alert',
-        html: `<p><strong>${message}</strong></p><p>Time: ${new Date().toLocaleString()}</p>`
-      })
-    });
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('Resend error:', errText);
-      return false;
-    }
-    console.log('📧 Resend notification sent');
+    await sgMail.send(msg);
+    console.log('✅ Email sent via SendGrid');
     return true;
-  } catch (e) {
-    console.error('Resend error:', e.message);
+  } catch (error) {
+    console.error('SendGrid error:', error.response?.body || error);
     return false;
   }
 }
@@ -663,34 +646,37 @@ async function sendResendAlert(message) {
 // ─── EXPRESS SERVER ─────────────────────────────────────────
 const app = express();
 app.use(express.json());
-app.use(express.static(__dirname)); // serves static files (like index.html)
+app.use(express.static(__dirname));
 
-// Health check
+// Health
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Get current prediction
+// Prediction
 app.get('/prediction', (req, res) => {
   const status = engine.getStatus();
   res.json({
     prediction: status.prediction,
     confidence: status.confidence,
     evidence: status.evidence,
+    number: status.lastPredictionNumber,
     currentStreak: status.currentStreak,
     lastResult: status.lastResult,
+    lastPeriod: status.lastPeriod,
     totalOutcomes: status.totalOutcomes,
     regime: status.regime,
-    strategy: status.strategy
+    strategy: status.strategy,
+    risk: status.risk
   });
 });
 
-// Get full status (including strategyStats)
+// Full status
 app.get('/status', (req, res) => {
   res.json(engine.getStatus());
 });
 
-// Add new outcome
+// Add outcome
 app.post('/outcome', async (req, res) => {
   const { outcome, number, period } = req.body;
   if (!outcome || (outcome !== 'BIG' && outcome !== 'SMALL')) {
@@ -706,13 +692,23 @@ app.post('/outcome', async (req, res) => {
   });
 });
 
-// Manual alert trigger
+// Manual alert
 app.post('/alert', async (req, res) => {
   const status = engine.getStatus();
-  const msg = `Prediction: ${status.prediction} | Confidence: ${status.confidence}% | Streak: ${status.currentStreak} | Last: ${status.lastResult}`;
-  const sent = await sendResendAlert(msg);
+  const html = `
+    <h2>StreakAI Alert</h2>
+    <p><strong>Prediction:</strong> ${status.prediction}</p>
+    <p><strong>Confidence:</strong> ${status.confidence}%</p>
+    <p><strong>Current Streak:</strong> ${status.currentStreak}</p>
+    <p><strong>Wins:</strong> ${status.wins} | <strong>Losses:</strong> ${status.losses}</p>
+    <p><strong>Accuracy:</strong> ${status.accuracy.toFixed(1)}%</p>
+    <p><strong>Regime:</strong> ${status.regime}</p>
+    <p><strong>Strategy:</strong> ${status.strategy}</p>
+    <p><em>Time: ${new Date().toLocaleString()}</em></p>
+  `;
+  const sent = await sendEmail('StreakAI Prediction Alert', html);
   if (sent) res.json({ success: true, message: 'Alert sent' });
-  else res.status(500).json({ success: false, error: 'Failed to send alert' });
+  else res.status(500).json({ success: false, error: 'Failed to send email' });
 });
 
 // Reset
@@ -726,11 +722,18 @@ const server = app.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📧 Will send one startup email in 5 minutes...`);
 
-  // ONE‑TIME EMAIL AFTER 5 MINUTES
+  // ONE‑TIME STARTUP EMAIL AFTER 5 MINUTES
   setTimeout(async () => {
     const status = engine.getStatus();
-    const msg = `StreakAI started successfully.\nPrediction: ${status.prediction} | Confidence: ${status.confidence}% | Streak: ${status.currentStreak} | Total outcomes: ${status.totalOutcomes}`;
-    const sent = await sendResendAlert(msg);
+    const html = `
+      <h2>✅ StreakAI Started</h2>
+      <p><strong>Prediction:</strong> ${status.prediction}</p>
+      <p><strong>Confidence:</strong> ${status.confidence}%</p>
+      <p><strong>Current Streak:</strong> ${status.currentStreak}</p>
+      <p><strong>Total Outcomes:</strong> ${status.totalOutcomes}</p>
+      <p><em>Time: ${new Date().toLocaleString()}</em></p>
+    `;
+    const sent = await sendEmail('StreakAI Startup', html);
     if (sent) console.log('✅ Startup email sent.');
     else console.log('❌ Startup email failed.');
   }, 5 * 60 * 1000);
