@@ -3,594 +3,1524 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KOKU AI • Adaptive Decision Engine</title>
+    <title>StreakAI · Adaptive Intelligence</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: #09090b;
-            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-            color: #fff;
-            min-height: 100vh;
-            padding: 16px;
-            overflow-x: hidden;
+        /* ─────────── RESET & BASE ─────────── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        /* ── Matrix Rain Canvas ── */
-        #matrixCanvas {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            z-index: 0;
-            opacity: 0.15;
-            pointer-events: none;
+        body {
+            background: radial-gradient(circle at 20% 30%, #0d0d1a, #03030a);
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            color: #f0f0ff;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
         }
         .app {
-            position: relative;
-            z-index: 1;
-            max-width: 1400px;
-            margin: 0 auto;
+            max-width: 1200px;
+            width: 100%;
             display: grid;
             grid-template-columns: 220px 1fr;
-            gap: 20px;
+            gap: 24px;
         }
+
+        /* ─────────── SIDEBAR ─────────── */
         .sidebar {
-            background: rgba(18,18,24,0.9);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 20px 14px;
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(18, 18, 24, 0.8);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-radius: 28px;
+            padding: 24px 16px;
+            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
             position: sticky;
-            top: 16px;
+            top: 20px;
             height: fit-content;
         }
-        .sidebar .logo { font-size: 20px; font-weight: 700; margin-bottom: 24px; }
-        .sidebar .logo span {
-            background: linear-gradient(135deg, #00e676, #00b0ff);
+        .logo {
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 28px;
+            background: linear-gradient(135deg, #a78bfa, #60a5fa);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+        .logo span {
+            font-size: 12px;
+            display: block;
+            -webkit-text-fill-color: rgba(255,255,255,0.4);
+            font-weight: 400;
         }
         .sidebar nav a {
-            display: block; padding: 10px 14px; border-radius: 12px;
-            color: #a8a8b3; font-weight: 500; font-size: 14px;
-            transition: 0.15s; margin-bottom: 2px; cursor: pointer;
+            display: block;
+            padding: 10px 14px;
+            border-radius: 12px;
+            color: #a8a8b3;
+            font-weight: 500;
+            font-size: 14px;
+            transition: 0.2s;
+            margin-bottom: 2px;
+            cursor: pointer;
             text-decoration: none;
         }
-        .sidebar nav a:hover, .sidebar nav a.active {
-            background: rgba(255,255,255,0.05);
+        .sidebar nav a:hover,
+        .sidebar nav a.active {
+            background: rgba(255,255,255,0.06);
             color: #fff;
         }
         .status-badge {
-            margin-top: 24px; padding: 12px 14px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px; font-size: 12px; color: #a8a8b3;
-            border-left: 3px solid #00e676;
+            margin-top: 32px;
+            padding: 12px 14px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 14px;
+            font-size: 12px;
+            color: #a8a8b3;
+            border-left: 3px solid #34d399;
         }
         .status-badge .dot {
-            display: inline-block; width: 8px; height: 8px; border-radius: 50%;
-            background: #00e676; margin-right: 8px;
-            animation: pulse-dot 1.5s infinite;
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #34d399;
+            margin-right: 8px;
+            animation: pulse 1.5s infinite;
         }
-        @keyframes pulse-dot { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
 
+        /* ─────────── MAIN ─────────── */
         .main {
-            display: flex; flex-direction: column; gap: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
         .topbar {
-            background: rgba(18,18,24,0.9);
-            backdrop-filter: blur(10px);
-            border-radius: 20px; padding: 14px 20px;
-            border: 1px solid rgba(255,255,255,0.1);
-            display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+            background: rgba(18, 18, 24, 0.8);
+            backdrop-filter: blur(14px);
+            border-radius: 28px;
+            padding: 14px 24px;
+            border: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
         }
-        .topbar .page-title { font-size: 18px; font-weight: 600; }
-        .topbar .page-title small { font-weight: 400; color: #a8a8b3; font-size: 13px; margin-left: 10px; }
-        .topbar .server-status {
-            display: flex; gap: 16px; font-size: 13px; color: #a8a8b3; align-items: center;
+        .topbar .page-title {
+            font-size: 18px;
+            font-weight: 600;
         }
-        .topbar .server-status .online { color: #00e676; }
+        .topbar .page-title small {
+            font-weight: 400;
+            color: #a8a8b3;
+            font-size: 13px;
+            margin-left: 8px;
+        }
+        .topbar .status-line {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: #a8a8b3;
+            align-items: center;
+        }
+        .topbar .status-line .online {
+            color: #34d399;
+        }
 
+        /* ─────────── CARDS ─────────── */
         .card {
-            background: rgba(18,18,24,0.85);
-            backdrop-filter: blur(10px);
-            border-radius: 20px; padding: 20px 24px;
-            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(18, 18, 24, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 28px;
+            padding: 20px 24px;
+            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
         .card-title {
-            font-size: 13px; font-weight: 600; text-transform: uppercase;
-            letter-spacing: 0.5px; color: #a8a8b3; margin-bottom: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #a8a8b3;
+            margin-bottom: 14px;
         }
 
+        /* ─────────── PREDICTION HERO ─────────── */
         .prediction-hero {
-            background: linear-gradient(145deg, rgba(26,26,36,0.9), rgba(18,18,24,0.9));
-            text-align: center; padding: 28px 20px 24px;
-            border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+            background: linear-gradient(145deg, rgba(26, 26, 36, 0.9), rgba(18, 18, 24, 0.9));
+            backdrop-filter: blur(12px);
+            text-align: center;
+            padding: 30px 20px 24px;
+            border-radius: 28px;
+            border: 1px solid rgba(255,255,255,0.06);
         }
-        .prediction-hero .period { font-size: 14px; color: #a8a8b3; }
+        .prediction-hero .period {
+            font-size: 14px;
+            color: #a8a8b3;
+        }
         .prediction-hero .prediction-value {
-            font-size: 72px; font-weight: 800; letter-spacing: 4px; margin: 10px 0 4px;
+            font-size: 72px;
+            font-weight: 800;
+            letter-spacing: 4px;
+            margin: 10px 0 4px;
         }
-        .prediction-hero .prediction-value.big { color: #ff5252; text-shadow: 0 0 30px rgba(255,82,82,0.25); }
-        .prediction-hero .prediction-value.small { color: #00b0ff; text-shadow: 0 0 30px rgba(0,176,255,0.25); }
-        .prediction-hero .prediction-number { font-size: 32px; font-weight: 600; margin-bottom: 12px; }
-        .confidence-row { display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; margin-top: 8px; }
-        .conf-item { text-align: center; }
-        .conf-item .label { font-size: 11px; color: #a8a8b3; text-transform: uppercase; }
-        .conf-item .value { font-size: 22px; font-weight: 700; }
-        .conf-item .value.high { color: #00e676; }
-        .conf-item .value.medium { color: #ffc107; }
+        .prediction-hero .prediction-value.big {
+            color: #ff5252;
+            text-shadow: 0 0 40px rgba(255, 82, 82, 0.25);
+        }
+        .prediction-hero .prediction-value.small {
+            color: #00b0ff;
+            text-shadow: 0 0 40px rgba(0, 176, 255, 0.25);
+        }
+        .prediction-hero .prediction-value.no-bet {
+            color: #fbbf24;
+            text-shadow: 0 0 40px rgba(251, 191, 36, 0.2);
+        }
+        .prediction-hero .prediction-number {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #e0e7ff;
+        }
+        .confidence-row {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .conf-item {
+            text-align: center;
+            min-width: 80px;
+        }
+        .conf-item .label {
+            font-size: 11px;
+            color: #a8a8b3;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .conf-item .value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .conf-item .value.high { color: #34d399; }
+        .conf-item .value.medium { color: #fbbf24; }
         .conf-item .value.low { color: #ff5252; }
-        .progress-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden; margin-top: 4px; }
-        .progress-bar .fill { height: 100%; background: linear-gradient(90deg, #00e676, #00b0ff); transition: width 0.3s; }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .progress-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, #34d399, #60a5fa);
+            transition: width 0.3s;
+        }
 
+        /* ─────────── STATS GRID ─────────── */
         .stats-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(100px,1fr)); gap: 12px; margin-top: 4px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 12px;
+            margin-top: 4px;
         }
         .stat-item {
-            background: rgba(255,255,255,0.04); border-radius: 14px; padding: 12px 10px; text-align: center;
+            background: rgba(255,255,255,0.04);
+            border-radius: 16px;
+            padding: 12px 10px;
+            text-align: center;
         }
-        .stat-item .num { font-size: 26px; font-weight: 700; }
-        .stat-item .num.win { color: #00e676; }
+        .stat-item .num {
+            font-size: 26px;
+            font-weight: 700;
+        }
+        .stat-item .num.win { color: #34d399; }
         .stat-item .num.loss { color: #ff5252; }
-        .stat-item .num.evidence { color: #ffc107; }
-        .stat-item .label { font-size: 10px; color: #a8a8b3; margin-top: 2px; text-transform: uppercase; }
+        .stat-item .num.evidence { color: #fbbf24; }
+        .stat-item .label {
+            font-size: 10px;
+            color: #a8a8b3;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
 
-        .strategy-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+        /* ─────────── STRATEGY PILLS ─────────── */
+        .strategy-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
         .strategy-pills .pill {
-            background: rgba(255,255,255,0.05);
-            padding: 4px 12px; border-radius: 16px; font-size: 12px;
-            border: 1px solid rgba(255,255,255,0.1);
-            display: inline-flex; align-items: center; gap: 6px;
-            color: #fff;
+            background: rgba(255,255,255,0.04);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
         .strategy-pills .pill .bar {
-            display: inline-block; width: 24px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;
+            display: inline-block;
+            width: 24px;
+            height: 4px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 4px;
+            overflow: hidden;
         }
         .strategy-pills .pill .bar .fill {
-            height: 100%; background: #00b0ff; border-radius: 4px; transition: width 0.3s;
+            height: 100%;
+            background: #60a5fa;
+            border-radius: 4px;
+            transition: width 0.3s;
         }
-        .strategy-pills .pill.best { border-color: #ffc107; background: rgba(255,193,7,0.1); }
-        .strategy-pills .pill.retired { border-color: #ff5252; opacity: 0.5; }
+        .strategy-pills .pill.best {
+            border-color: #fbbf24;
+            background: rgba(251,191,36,0.08);
+        }
+        .strategy-pills .pill.retired {
+            opacity: 0.4;
+            border-color: #ff5252;
+        }
 
+        /* ─────────── MARKET BADGES ─────────── */
         .market-badge {
-            background: rgba(255,255,255,0.05);
-            padding: 4px 14px; border-radius: 20px; font-size: 12px;
-            border: 1px solid rgba(255,255,255,0.1);
-            display: inline-block; margin: 2px; color: #fff;
+            background: rgba(255,255,255,0.04);
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+            display: inline-block;
+            margin: 2px;
         }
-        .market-badge.active { border-color: #00b0ff; background: rgba(0,176,255,0.1); }
+        .market-badge.active {
+            border-color: #60a5fa;
+            background: rgba(96,165,250,0.1);
+        }
         .regime-indicator {
-            display: inline-block; padding: 4px 12px; border-radius: 12px;
-            font-size: 12px; font-weight: 600;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
         }
-        .regime-trending { background: rgba(0,230,118,0.2); color: #00e676; }
-        .regime-volatile { background: rgba(255,82,82,0.2); color: #ff5252; }
-        .regime-random { background: rgba(255,193,7,0.2); color: #ffc107; }
-        .regime-cyclic { background: rgba(0,176,255,0.2); color: #00b0ff; }
+        .regime-trending { background: rgba(52,211,153,0.15); color: #34d399; }
+        .regime-volatile { background: rgba(255,82,82,0.15); color: #ff5252; }
+        .regime-random { background: rgba(251,191,36,0.15); color: #fbbf24; }
+        .regime-cyclic { background: rgba(96,165,250,0.15); color: #60a5fa; }
         .regime-normal { background: rgba(255,255,255,0.05); color: #a8a8b3; }
 
+        /* ─────────── EXPLANATION BOX ─────────── */
         .explanation-box {
-            background: rgba(13,13,18,0.9);
-            border-radius: 16px; padding: 16px 18px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 16px;
+            padding: 16px 18px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 12px; line-height: 1.6; color: #c8c8d4;
-            white-space: pre-wrap; max-height: 280px; overflow-y: auto;
-            border: 1px solid rgba(255,255,255,0.08);
+            font-size: 12px;
+            line-height: 1.6;
+            color: #c8c8d4;
+            white-space: pre-wrap;
+            max-height: 280px;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.04);
         }
 
-        .history-wrap { overflow-x: auto; max-height: 260px; overflow-y: auto; }
-        .history-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; color: #fff; }
+        /* ─────────── HISTORY TABLE ─────────── */
+        .history-wrap {
+            overflow-x: auto;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+        .history-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
         .history-wrap th {
-            text-align: left; color: #a8a8b3; font-weight: 500; padding: 6px 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            position: sticky; top: 0; background: rgba(18,18,24,0.95);
+            text-align: left;
+            color: #a8a8b3;
+            font-weight: 500;
+            padding: 6px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            position: sticky;
+            top: 0;
+            background: rgba(18,18,24,0.95);
         }
-        .history-wrap td { padding: 6px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .history-wrap .win { color: #00e676; }
-        .history-wrap .loss { color: #ff5252; }
-
-        .btn {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.15);
-            padding: 8px 18px; border-radius: 30px;
-            color: #fff; font-weight: 600; cursor: pointer;
-            font-size: 13px; transition: 0.15s;
-        }
-        .btn:hover { background: rgba(255,255,255,0.15); }
-        .btn-primary { background: linear-gradient(135deg, #00b0ff, #0088cc); border-color: #00b0ff; }
-        .btn-primary:hover { background: linear-gradient(135deg, #1ac0ff, #0099dd); }
-        .btn-danger { background: linear-gradient(135deg, #ff5252, #cc3333); border-color: #ff5252; }
-
-        .flex-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-
-        /* Admin panel */
-        .admin-section { display: none; margin-top: 16px; }
-        .admin-section.show { display: block; }
-        .admin-input {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 10px 16px;
-            border-radius: 30px;
-            color: #fff;
-            width: 240px;
-            font-size: 14px;
-            outline: none;
-        }
-        .admin-input:focus { border-color: #00b0ff; }
-        .history-list { max-height: 400px; overflow-y: auto; font-size: 13px; margin-top: 12px; }
-        .history-list .row {
-            display: flex; justify-content: space-between; padding: 8px 0;
+        .history-wrap td {
+            padding: 6px 10px;
             border-bottom: 1px solid rgba(255,255,255,0.04);
         }
+        .history-wrap .win { color: #34d399; }
+        .history-wrap .loss { color: #ff5252; }
 
-        /* Mobile */
-        .sidebar-mobile { display: none; }
-        @media (max-width:1024px) {
-            .app { grid-template-columns: 1fr; }
-            .sidebar { display: none; }
+        /* ─────────── BUTTONS ─────────── */
+        .btn {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 10px 24px;
+            border-radius: 40px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn:hover { background: rgba(255,255,255,0.12); transform: translateY(-2px); }
+        .btn:active { transform: scale(0.96); }
+        .btn-big { background: linear-gradient(145deg, #10b981, #059669); border-color: #34d399; }
+        .btn-big:hover { box-shadow: 0 6px 30px rgba(52,211,153,0.25); }
+        .btn-small { background: linear-gradient(145deg, #ef4444, #dc2626); border-color: #f87171; }
+        .btn-small:hover { box-shadow: 0 6px 30px rgba(248,113,113,0.25); }
+        .btn-danger { background: rgba(255,82,82,0.2); border-color: #ff5252; }
+        .btn-danger:hover { background: rgba(255,82,82,0.3); }
+        .btn-primary { background: rgba(96,165,250,0.2); border-color: #60a5fa; }
+        .btn-primary:hover { background: rgba(96,165,250,0.3); }
+        .flex-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        /* ─────────── RESPONSIVE ─────────── */
+        @media (max-width: 1024px) {
+            .app {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                display: none;
+            }
             .sidebar-mobile {
-                display: flex; flex-wrap: wrap; gap: 6px;
-                background: rgba(18,18,24,0.9); backdrop-filter: blur(10px);
-                border-radius: 16px; padding: 10px 14px;
-                border: 1px solid rgba(255,255,255,0.1); margin-bottom: 12px;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                background: rgba(18,18,24,0.8);
+                backdrop-filter: blur(14px);
+                border-radius: 20px;
+                padding: 10px 14px;
+                border: 1px solid rgba(255,255,255,0.06);
+                margin-bottom: 12px;
             }
             .sidebar-mobile a {
-                color: #a8a8b3; font-size: 13px; padding: 4px 12px; border-radius: 20px;
-                background: rgba(255,255,255,0.05); border: 1px solid transparent; cursor: pointer;
-                text-decoration: none;
+                color: #a8a8b3;
+                font-size: 13px;
+                padding: 4px 12px;
+                border-radius: 20px;
+                background: rgba(255,255,255,0.04);
+                border: 1px solid transparent;
+                cursor: pointer;
             }
-            .sidebar-mobile a.active { border-color: #00b0ff; color: #fff; }
+            .sidebar-mobile a.active {
+                border-color: #60a5fa;
+                color: #fff;
+            }
         }
-        @media (max-width:600px) {
+        .sidebar-mobile {
+            display: none;
+        }
+        @media (max-width: 600px) {
             .prediction-hero .prediction-value { font-size: 48px; }
-            .stats-grid { grid-template-columns: repeat(3,1fr); }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
+            .confidence-row { gap: 16px; }
         }
     </style>
 </head>
 <body>
-    <canvas id="matrixCanvas"></canvas>
 
-    <!-- Mobile sidebar -->
-    <div class="sidebar-mobile">
-        <a href="#" class="active" data-page="dashboard">📊 Dashboard</a>
-        <a href="#" data-page="history">📜 History</a>
-        <a href="#" data-page="analytics">📈 Analytics</a>
-        <a href="#" data-page="learning">🧠 Learning</a>
-        <a href="#" data-page="admin">⚙️ Admin</a>
-    </div>
+<div class="sidebar-mobile">
+    <a href="#" class="active" data-page="dashboard">📊 Dashboard</a>
+    <a href="#" data-page="history">📜 History</a>
+    <a href="#" data-page="analytics">📈 Analytics</a>
+    <a href="#" data-page="learning">🧠 Learning</a>
+    <a href="#" data-page="admin">⚙️ Admin</a>
+</div>
 
-    <div class="app">
-        <aside class="sidebar">
-            <div class="logo">🧠 <span>KOKU ML</span></div>
-            <nav>
-                <a href="#" class="active" data-page="dashboard">📊 Dashboard</a>
-                <a href="#" data-page="history">📜 History</a>
-                <a href="#" data-page="analytics">📈 Analytics</a>
-                <a href="#" data-page="learning">🧠 Learning</a>
-                <a href="#" data-page="admin">⚙️ Admin</a>
-            </nav>
-            <div class="status-badge">
-                <div><span class="dot"></span> ML Pipeline Active</div>
-                <div style="margin-top:6px;font-size:11px;">v5.0 · Stacked Ensemble</div>
-                <div style="margin-top:4px;font-size:11px;color:#666;" id="lastUpdateLabel">--</div>
+<div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="logo">⚡ StreakAI <span>Adaptive Intelligence</span></div>
+        <nav>
+            <a href="#" class="active" data-page="dashboard">📊 Dashboard</a>
+            <a href="#" data-page="history">📜 History</a>
+            <a href="#" data-page="analytics">📈 Analytics</a>
+            <a href="#" data-page="learning">🧠 Learning</a>
+            <a href="#" data-page="admin">⚙️ Admin</a>
+        </nav>
+        <div class="status-badge">
+            <div><span class="dot"></span> Engine Running</div>
+            <div style="margin-top:6px;font-size:11px;">v5.0 · Evidence-Based</div>
+            <div style="margin-top:4px;font-size:11px;color:#666;" id="lastUpdateLabel">--</div>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+        <header class="topbar">
+            <div class="page-title">
+                📊 Dashboard
+                <small id="pageSubtitle">Adaptive Decision Engine</small>
             </div>
-        </aside>
+            <div class="status-line">
+                <span>🟢 <span class="online">AI</span></span>
+                <span id="periodDisplay">Period: --</span>
+                <span id="timerDisplay">⏱️ --</span>
+            </div>
+        </header>
 
-        <main class="main">
-            <header class="topbar">
-                <div class="page-title">📊 Dashboard <small id="pageSubtitle">ML Pipeline</small></div>
-                <div class="server-status">
-                    <span>🟢 <span class="online">ML</span></span>
-                    <span id="periodDisplay">Period: --</span>
-                    <span id="timerDisplay">⏱️ --</span>
-                </div>
-            </header>
+        <!-- Dashboard Page -->
+        <section id="page-dashboard">
 
-            <!-- Dashboard Page -->
-            <section id="page-dashboard">
-                <div class="prediction-hero">
-                    <div class="period" id="currentPeriodLabel">Loading...</div>
-                    <div class="prediction-value big" id="predictionDisplay">---</div>
-                    <div class="prediction-number" id="numberDisplay">---</div>
-                    <div class="confidence-row">
-                        <div class="conf-item">
-                            <div class="label">Confidence</div>
-                            <div class="value high" id="confidenceDisplay">0%</div>
-                            <div class="progress-bar"><div class="fill" id="confidenceFill" style="width:0%"></div></div>
-                        </div>
-                        <div class="conf-item">
-                            <div class="label">Risk</div>
-                            <div class="value medium" id="riskDisplay">--</div>
-                        </div>
-                        <div class="conf-item">
-                            <div class="label">Regime</div>
-                            <div class="value" id="regimeDisplay" style="font-size:18px;">--</div>
-                        </div>
-                        <div class="conf-item">
-                            <div class="label">Ensemble</div>
-                            <div class="value" id="strategyDisplay" style="font-size:16px;color:#ffc107;">--</div>
-                        </div>
+            <div class="prediction-hero">
+                <div class="period" id="currentPeriodLabel">Loading...</div>
+                <div class="prediction-value no-bet" id="predictionDisplay">NO BET</div>
+                <div class="prediction-number" id="numberDisplay">--</div>
+                <div class="confidence-row">
+                    <div class="conf-item">
+                        <div class="label">Confidence</div>
+                        <div class="value high" id="confidenceDisplay">0%</div>
+                        <div class="progress-bar"><div class="fill" id="confidenceFill" style="width:0%"></div></div>
                     </div>
-                    <div style="margin-top:12px;font-size:12px;color:#a8a8b3;" id="evidenceDisplay">🧪 Evidence Score: --</div>
+                    <div class="conf-item">
+                        <div class="label">Risk</div>
+                        <div class="value medium" id="riskDisplay">--</div>
+                    </div>
+                    <div class="conf-item">
+                        <div class="label">Regime</div>
+                        <div class="value" id="regimeDisplay" style="font-size:18px;">--</div>
+                    </div>
+                    <div class="conf-item">
+                        <div class="label">Strategy</div>
+                        <div class="value" id="strategyDisplay" style="font-size:16px;color:#fbbf24;">--</div>
+                    </div>
                 </div>
+                <div style="margin-top:12px;font-size:12px;color:#a8a8b3;" id="evidenceDisplay">⚖️ Evidence Score: --</div>
+            </div>
 
+            <div class="card">
+                <div class="card-title">📊 Performance</div>
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-item"><div class="num win" id="statWins">0</div><div class="label">Wins</div></div>
+                    <div class="stat-item"><div class="num loss" id="statLosses">0</div><div class="label">Losses</div></div>
+                    <div class="stat-item"><div class="num" id="statAccuracy" style="color:#fbbf24;">0%</div><div class="label">Accuracy</div></div>
+                    <div class="stat-item"><div class="num" id="statPatterns" style="color:#60a5fa;">0</div><div class="label">Patterns</div></div>
+                    <div class="stat-item"><div class="num evidence" id="statEvidence">0</div><div class="label">Evidence</div></div>
+                    <div class="stat-item"><div class="num" id="statStreak" style="color:#e0e7ff;">0</div><div class="label">Win Streak</div></div>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px;">
                 <div class="card">
-                    <div class="card-title">📊 Performance</div>
-                    <div class="stats-grid" id="statsGrid">
-                        <div class="stat-item"><div class="num win" id="statWins">0</div><div class="label">Wins</div></div>
-                        <div class="stat-item"><div class="num loss" id="statLosses">0</div><div class="label">Losses</div></div>
-                        <div class="stat-item"><div class="num" id="statAccuracy" style="color:#ffc107;">0%</div><div class="label">Accuracy</div></div>
-                        <div class="stat-item"><div class="num" id="statPatterns" style="color:#00b0ff;">0</div><div class="label">Features</div></div>
-                        <div class="stat-item"><div class="num evidence" id="statEvidence">0</div><div class="label">Evidence</div></div>
-                        <div class="stat-item"><div class="num" id="statRegime" style="color:#a8a8b3;">--</div><div class="label">Regime</div></div>
-                    </div>
-                </div>
-
-                <div style="display:grid; grid-template-columns:2fr 1fr; gap:20px;">
-                    <div class="card">
-                        <div class="card-title">⚖️ Model Weights (Stacked Ensemble)</div>
-                        <div class="strategy-pills" id="strategyPills"></div>
-                    </div>
-                    <div class="card">
-                        <div class="card-title">🎯 Market Regime</div>
-                        <div id="marketBadges"></div>
-                        <div style="margin-top:10px;font-size:12px;color:#a8a8b3;" id="marketDetail">--</div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-title">🔍 Prediction Explanation (ML)</div>
-                    <div class="explanation-box" id="explanationBox">Waiting for data…</div>
-                </div>
-
-                <div class="card">
-                    <div class="card-title">📜 Recent History</div>
-                    <div class="history-wrap">
-                        <table>
-                            <thead><tr><th>Period</th><th>Pred</th><th>Actual</th><th>Conf</th><th>Result</th></tr></thead>
-                            <tbody id="historyPreview"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="flex-row">
-                    <button class="btn btn-primary" id="forceBtn">🎯 Force Prediction</button>
-                    <button class="btn" id="exportBtn">💾 Export JSON</button>
-                    <button class="btn btn-danger" id="resetBtn">🔄 Reset</button>
-                    <button class="btn" onclick="toggleAdmin()">🔐 Admin Panel</button>
-                </div>
-
-                <!-- Admin Panel -->
-                <div class="admin-section" id="adminSection">
-                    <div class="card">
-                        <div class="card-title">🔑 Admin Access</div>
-                        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
-                            <input class="admin-input" id="adminKeyInput" type="password" placeholder="Enter admin key" />
-                            <button class="btn btn-primary" onclick="loadAdminData()">Load History</button>
-                        </div>
-                        <div id="adminStats" style="margin-top:12px;"></div>
-                        <div id="adminHistory" class="history-list"></div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- History -->
-            <section id="page-history" style="display:none;">
-                <div class="card">
-                    <div class="card-title">📜 Full History</div>
-                    <div class="history-wrap" style="max-height:500px;">
-                        <table>
-                            <thead><tr><th>Period</th><th>Pred</th><th>Num</th><th>Actual</th><th>Conf</th><th>Risk</th><th>Model</th><th>Result</th></tr></thead>
-                            <tbody id="historyFull"></tbody>
-                        </table>
-                    </div>
-                    <div class="flex-row" style="margin-top:12px;">
-                        <button class="btn" id="exportCsvBtn">📊 Export CSV</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Analytics -->
-            <section id="page-analytics" style="display:none;">
-                <div class="card">
-                    <div class="card-title">📈 Analytics</div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-                        <div><div style="color:#a8a8b3;font-size:12px;">Model Accuracy (Rolling)</div><div id="accChart" style="height:100px;background:rgba(255,255,255,0.04);border-radius:12px;padding:10px;font-size:11px;color:#a8a8b3;overflow-y:auto;"></div></div>
-                        <div><div style="color:#a8a8b3;font-size:12px;">Ensemble Weights</div><div id="stratChart" style="height:100px;background:rgba(255,255,255,0.04);border-radius:12px;padding:10px;font-size:11px;color:#a8a8b3;overflow-y:auto;"></div></div>
-                    </div>
-                    <div style="margin-top:16px;display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px;" id="analyticsStats"></div>
-                </div>
-            </section>
-
-            <!-- Learning -->
-            <section id="page-learning" style="display:none;">
-                <div class="card">
-                    <div class="card-title">🧠 ML Pipeline Status</div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;" id="learningStats"></div>
+                    <div class="card-title">⚖️ Strategy Evidence</div>
+                    <div class="strategy-pills" id="strategyPills"></div>
                 </div>
                 <div class="card">
-                    <div class="card-title">📜 Feature Importance</div>
-                    <div id="rulesList" style="max-height:250px;overflow-y:auto;font-size:12px;color:#c8c8d4;"></div>
+                    <div class="card-title">🎯 Market Regime</div>
+                    <div id="marketBadges"></div>
+                    <div style="margin-top:10px;font-size:12px;color:#a8a8b3;" id="marketDetail">--</div>
                 </div>
-                <div class="card">
-                    <div class="card-title">🧬 Cross‑Validation Scores</div>
-                    <div id="patternList" style="max-height:180px;overflow-y:auto;font-size:12px;color:#c8c8d4;"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🔍 Decision Explanation</div>
+                <div class="explanation-box" id="explanationBox">Waiting for data…</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📜 Recent History</div>
+                <div class="history-wrap">
+                    <table>
+                        <thead><tr><th>Period</th><th>Pred</th><th>Actual</th><th>Conf</th><th>Result</th></tr></thead>
+                        <tbody id="historyPreview"></tbody>
+                    </table>
                 </div>
-            </section>
+            </div>
 
-            <!-- Admin Page -->
-            <section id="page-admin" style="display:none;">
-                <div class="card">
-                    <div class="card-title">⚙️ Admin</div>
-                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px;">
-                        <button class="btn" id="retrainBtn">🔄 Retrain Models</button>
-                        <button class="btn" id="optimizeBtn">⚡ Validate & Optimize</button>
-                        <button class="btn" id="backupBtn">💾 Backup</button>
-                        <button class="btn btn-danger" id="clearHistoryBtn">🗑️ Clear</button>
-                    </div>
-                    <div style="margin-top:16px;">
-                        <div class="card-title">📋 Logs</div>
-                        <div id="adminLogs" style="max-height:180px;overflow-y:auto;font-size:12px;color:#a8a8b3;background:rgba(13,13,18,0.9);border-radius:12px;padding:12px;font-family:monospace;"></div>
-                    </div>
+            <div class="flex-row">
+                <button class="btn btn-big" id="btnBig">⬆ BIG</button>
+                <button class="btn btn-small" id="btnSmall">⬇ SMALL</button>
+                <button class="btn btn-primary" id="forceBtn">🎯 Force Prediction</button>
+                <button class="btn" id="exportBtn">💾 Export JSON</button>
+                <button class="btn btn-danger" id="resetBtn">🔄 Reset</button>
+            </div>
+        </section>
+
+        <!-- History Page -->
+        <section id="page-history" style="display:none;">
+            <div class="card">
+                <div class="card-title">📜 Full History</div>
+                <div class="history-wrap" style="max-height:500px;">
+                    <table>
+                        <thead><tr><th>Period</th><th>Pred</th><th>Num</th><th>Actual</th><th>Conf</th><th>Risk</th><th>Strategy</th><th>Result</th></tr></thead>
+                        <tbody id="historyFull"></tbody>
+                    </table>
                 </div>
-            </section>
+                <div class="flex-row" style="margin-top:12px;">
+                    <button class="btn" id="exportCsvBtn">📊 Export CSV</button>
+                </div>
+            </div>
+        </section>
 
-        </main>
-    </div>
+        <!-- Analytics Page -->
+        <section id="page-analytics" style="display:none;">
+            <div class="card">
+                <div class="card-title">📈 Analytics</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                    <div><div style="color:#a8a8b3;font-size:12px;">Accuracy Trend</div><div id="accChart" style="height:100px;background:rgba(0,0,0,0.3);border-radius:12px;padding:10px;font-size:11px;color:#a8a8b3;overflow-y:auto;"></div></div>
+                    <div><div style="color:#a8a8b3;font-size:12px;">Strategy Evidence</div><div id="stratChart" style="height:100px;background:rgba(0,0,0,0.3);border-radius:12px;padding:10px;font-size:11px;color:#a8a8b3;overflow-y:auto;"></div></div>
+                </div>
+                <div style="margin-top:16px;display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px;" id="analyticsStats"></div>
+            </div>
+        </section>
 
-    <script>
-        // ─── Matrix Rain ───
-        (function matrixRain() {
-            const canvas = document.getElementById('matrixCanvas');
-            const ctx = canvas.getContext('2d');
-            function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-            window.addEventListener('resize', resize);
-            resize();
-            const cols = Math.floor(canvas.width / 20);
-            const drops = Array(cols).fill(1);
-            function draw() {
-                ctx.fillStyle = 'rgba(0,0,0,0.05)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = '#0f0';
-                ctx.font = '15px monospace';
-                for (let i = 0; i < drops.length; i++) {
-                    const text = String.fromCharCode(0x30A0 + Math.random() * 96);
-                    ctx.fillText(text, i * 20, drops[i] * 20);
-                    if (drops[i] * 20 > canvas.height && Math.random() > 0.975) drops[i] = 0;
-                    drops[i]++;
-                }
-            }
-            setInterval(draw, 50);
-        })();
+        <!-- Learning Page -->
+        <section id="page-learning" style="display:none;">
+            <div class="card">
+                <div class="card-title">🧠 Learning</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;" id="learningStats"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">📜 Active Rules</div>
+                <div id="rulesList" style="max-height:250px;overflow-y:auto;font-size:12px;"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">🧬 Patterns</div>
+                <div id="patternList" style="max-height:180px;overflow-y:auto;font-size:12px;"></div>
+            </div>
+        </section>
 
-        // ─── DOM refs ───
+        <!-- Admin Page -->
+        <section id="page-admin" style="display:none;">
+            <div class="card">
+                <div class="card-title">⚙️ Admin</div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px;">
+                    <button class="btn" id="retrainBtn">🔄 Retrain</button>
+                    <button class="btn" id="optimizeBtn">⚡ Optimize</button>
+                    <button class="btn" id="backupBtn">💾 Backup</button>
+                    <button class="btn btn-danger" id="clearHistoryBtn">🗑️ Clear</button>
+                </div>
+                <div style="margin-top:16px;">
+                    <div class="card-title">📋 Logs</div>
+                    <div id="adminLogs" style="max-height:180px;overflow-y:auto;font-size:12px;color:#a8a8b3;background:rgba(0,0,0,0.3);border-radius:12px;padding:12px;font-family:monospace;"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //  ADAPTIVE STREAK INTELLIGENCE ENGINE (v5)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    (() => {
+        'use strict';
+
+        // ─── HELPERS ───
         const $ = id => document.getElementById(id);
         const setText = (id, txt) => { const el = $(id); if (el) el.textContent = txt; };
         const setHTML = (id, html) => { const el = $(id); if (el) el.innerHTML = html; };
+        const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+        const mean = arr => arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : 0;
+        const mode = arr => { if (!arr.length) return 0; const f={}; let m=arr[0],c=0; for(const v of arr){ f[v]=(f[v]||0)+1; if(f[v]>c){c=f[v];m=v;}} return m; };
 
-        // ─── Fetch latest prediction from backend ───
-        async function refreshPrediction() {
-            try {
-                const res = await fetch('/api/latest');
-                if (!res.ok) throw new Error('API error');
-                const data = await res.json();
-                if (data.error) {
-                    setText('predictionDisplay', '---');
-                    setText('numberDisplay', '---');
-                    setText('periodDisplay', '--');
-                    setText('confidenceDisplay', '0%');
-                    return;
-                }
-                // Update UI
-                const predEl = document.getElementById('predictionDisplay');
-                if (predEl) {
-                    predEl.textContent = data.predicted || '---';
-                    predEl.className = `prediction-value ${data.predicted === 'BIG' ? 'big' : 'small'}`;
-                }
-                setText('numberDisplay', data.number || '---');
-                setText('periodDisplay', data.period || '--');
-                setText('currentPeriodLabel', `Period: ${data.period || '--'}`);
-                setText('confidenceDisplay', data.confidence ? `${data.confidence.toFixed(0)}%` : '0%');
-                setText('strategyDisplay', data.strategy || '--');
-                // Fill confidence bar
-                const fill = document.getElementById('confidenceFill');
-                if (fill) fill.style.width = `${data.confidence || 0}%`;
-                // Risk (rough)
-                const risk = data.confidence > 70 ? 'LOW' : data.confidence > 45 ? 'MEDIUM' : 'HIGH';
-                setText('riskDisplay', risk);
-                const riskEl = document.getElementById('riskDisplay');
-                if (riskEl) riskEl.className = `value ${risk === 'LOW' ? 'high' : risk === 'MEDIUM' ? 'medium' : 'low'}`;
-                // Evidence (mock)
-                setText('evidenceDisplay', `🧪 Evidence Score: ${(data.confidence/100*0.8 + 0.2).toFixed(2)}`);
-                // Explanation (optional)
-                const expBox = document.getElementById('explanationBox');
-                if (expBox) {
-                    expBox.textContent = `📊 Prediction: ${data.predicted} → Number ${data.number}\nConfidence: ${data.confidence.toFixed(0)}%\nRisk: ${risk}\nStrategy: ${data.strategy || 'ensemble'}`;
-                }
-            } catch (e) {
-                console.warn('Failed to fetch prediction:', e);
+        // ─── CONFIG ───
+        const MIN_SAMPLES = 20;
+        const SIGNIFICANCE_THRESHOLD = 0.05;
+        const MAX_HISTORY = 200;
+        const STRATEGIES = ['trend', 'reversal', 'pattern', 'markov', 'bayesian', 'ensemble'];
+
+        // ─── STATE ───
+        let history = [];              // { period, number, size }
+        let predictions = [];
+        let wins = 0, losses = 0;
+        let lastPeriod = null;
+        let lastPrediction = null;
+        let lastPredictionNumber = null;
+        let lastConfidence = 0;
+        let lastRisk = '--';
+        let lastRegime = 'NORMAL';
+        let lastStrategy = 'ensemble';
+        let patterns = [];
+        let rules = [];
+        let totalEvidenceScore = 0.5;
+
+        // ─── STREAK DATA ───
+        let streakData = {};  // key: streakLength (number) -> { continuations, reversals }
+        let totalStreakSamples = 0;
+        let transitions = { BIG: { BIG: 0, SMALL: 0 }, SMALL: { BIG: 0, SMALL: 0 } };
+
+        // ─── STRATEGY STATS ───
+        let strategyStats = {};
+        for (const s of STRATEGIES) {
+            strategyStats[s] = {
+                weight: 1.0,
+                evidence: 0.5,
+                samples: 0,
+                pValue: 0.5,
+                retired: false,
+                performance: [],
+                regimePerformance: {}
+            };
+        }
+
+        // ─── REGIME ───
+        let marketRegime = { state: 'NORMAL', confidence: 0.5 };
+        let lastRegimeChange = Date.now();
+
+        // ─── HELPERS ───
+        function getSize(n) { return n >= 5 ? 'BIG' : 'SMALL'; }
+
+        // ─── STREAK ENGINE CORE ───
+        function recordStreak(length, direction, wasContinued) {
+            if (length === 0) return;
+            const key = length;
+            if (!streakData[key]) streakData[key] = { continuations: 0, reversals: 0 };
+            if (wasContinued) streakData[key].continuations++;
+            else streakData[key].reversals++;
+            totalStreakSamples++;
+        }
+
+        function getCurrentStreak(historyArr) {
+            if (!historyArr.length) return { length: 0, direction: null };
+            let len = 1, dir = historyArr[historyArr.length-1].size;
+            for (let i = historyArr.length-2; i >= 0; i--) {
+                if (historyArr[i].size === dir) len++;
+                else break;
             }
+            return { length: len, direction: dir };
         }
 
-        // ─── Admin Panel ───
-        function toggleAdmin() {
-            const section = document.getElementById('adminSection');
-            section.classList.toggle('show');
-        }
+        // Rebuild streak data from history
+        function rebuildStreakData(historyArr) {
+            streakData = {};
+            totalStreakSamples = 0;
+            transitions = { BIG: { BIG: 0, SMALL: 0 }, SMALL: { BIG: 0, SMALL: 0 } };
+            if (historyArr.length < 2) return;
 
-        async function loadAdminData() {
-            const key = document.getElementById('adminKeyInput').value.trim();
-            if (!key) { alert('Please enter admin key.'); return; }
-            try {
-                // Stats
-                const statsRes = await fetch(`/api/stats?key=${encodeURIComponent(key)}`);
-                if (!statsRes.ok) { alert('Invalid admin key.'); return; }
-                const stats = await statsRes.json();
-                const statsDiv = document.getElementById('adminStats');
-                statsDiv.innerHTML = `
-                    <div class="stats-grid">
-                        <div class="stat"><div class="num">${stats.total || 0}</div><div class="label">Total</div></div>
-                        <div class="stat"><div class="num" style="color:#00e676;">${stats.wins || 0}</div><div class="label">Wins</div></div>
-                        <div class="stat"><div class="num" style="color:#ff5252;">${stats.losses || 0}</div><div class="label">Losses</div></div>
-                        <div class="stat"><div class="num" style="color:#ffc107;">${stats.accuracy || 0}%</div><div class="label">Accuracy</div></div>
-                    </div>
-                `;
-                // History
-                const histRes = await fetch(`/api/history?key=${encodeURIComponent(key)}`);
-                const history = await histRes.json();
-                const histDiv = document.getElementById('adminHistory');
-                if (!history || !history.length) {
-                    histDiv.innerHTML = '<div style="color:#a8a8b3;">No predictions yet.</div>';
-                    return;
+            let streakLen = 1;
+            let streakDir = historyArr[0].size;
+            for (let i = 1; i < historyArr.length; i++) {
+                const current = historyArr[i].size;
+                if (current === streakDir) {
+                    streakLen++;
+                } else {
+                    // streak broke
+                    recordStreak(streakLen, streakDir, false);
+                    streakLen = 1;
+                    streakDir = current;
                 }
-                histDiv.innerHTML = history.map(h => {
-                    const status = h.correct === 1 ? '✅ WIN' : h.correct === 0 ? '❌ LOSS' : '⏳ PENDING';
-                    const cls = h.correct === 1 ? 'win' : h.correct === 0 ? 'loss' : '';
-                    return `<div class="row">
-                        <span>${h.period}</span>
-                        <span>Pred: ${h.predicted} → ${h.predicted_number}</span>
-                        <span>Actual: ${h.actual || '?'} (${h.actual_number || '?'})</span>
-                        <span>Conf: ${h.confidence ? h.confidence.toFixed(0) + '%' : '--'}</span>
-                        <span class="${cls}">${status}</span>
-                    </div>`;
-                }).join('');
-            } catch (e) {
-                alert('Error loading admin data: ' + e.message);
+                // update transitions
+                const prev = historyArr[i-1].size;
+                transitions[prev][current] = (transitions[prev][current] || 0) + 1;
             }
+            // last streak is active – not recorded
         }
 
-        // ─── Force prediction (call backend) ───
-        document.getElementById('forceBtn')?.addEventListener('click', async () => {
-            await refreshPrediction();
-            alert('Prediction refreshed');
-        });
+        // Get continuation vs reversal probability for a streak length
+        function getStreakProbabilities(length) {
+            const data = streakData[length];
+            if (!data) return { contProb: 0.5, revProb: 0.5, sampleSize: 0 };
+            const total = data.continuations + data.reversals;
+            if (total < MIN_SAMPLES) return { contProb: 0.5, revProb: 0.5, sampleSize: total };
+            return {
+                contProb: data.continuations / total,
+                revProb: data.reversals / total,
+                sampleSize: total
+            };
+        }
 
-        // ─── Auto refresh every 30 seconds ───
-        refreshPrediction();
-        setInterval(refreshPrediction, 30000);
+        // ─── PREDICT ───
+        function predict(historyArr) {
+            if (historyArr.length < 5) {
+                return { prediction: 'NO_BET', confidence: 0, evidence: 0, number: 5, risk: 'HIGH', regime: 'NORMAL', strategy: 'ensemble' };
+            }
 
-        // ─── Navigation ───
+            const current = getCurrentStreak(historyArr);
+            const length = current.length;
+            const direction = current.direction;
+
+            // Get probabilities for this streak length
+            const probs = getStreakProbabilities(length);
+            let contProb = probs.contProb;
+            let revProb = probs.revProb;
+            let sampleSize = probs.sampleSize;
+
+            // If insufficient samples, fallback to global transition bias
+            if (sampleSize < MIN_SAMPLES) {
+                // Global bias
+                let totalTrans = 0;
+                for (const p of ['BIG','SMALL']) totalTrans += transitions[p].BIG + transitions[p].SMALL;
+                if (totalTrans < MIN_SAMPLES) {
+                    return { prediction: 'NO_BET', confidence: 0, evidence: 0, number: 5, risk: 'HIGH', regime: 'NORMAL', strategy: 'ensemble' };
+                }
+                let globalCont = 0, globalRev = 0;
+                for (const prev of ['BIG','SMALL']) {
+                    const t = transitions[prev] || { BIG: 0, SMALL: 0 };
+                    const same = prev === 'BIG' ? t.BIG : t.SMALL;
+                    const opp = prev === 'BIG' ? t.SMALL : t.BIG;
+                    globalCont += same;
+                    globalRev += opp;
+                }
+                const total = globalCont + globalRev;
+                if (total < MIN_SAMPLES) {
+                    return { prediction: 'NO_BET', confidence: 0, evidence: 0, number: 5, risk: 'HIGH', regime: 'NORMAL', strategy: 'ensemble' };
+                }
+                const gCont = globalCont / total;
+                const gRev = 1 - gCont;
+                const margin = Math.abs(gCont - gRev);
+                if (margin < 0.12) {
+                    return { prediction: 'NO_BET', confidence: margin*100, evidence: total, number: 5, risk: 'HIGH', regime: 'NORMAL', strategy: 'ensemble' };
+                }
+                const pred = gCont > gRev ? direction : (direction === 'BIG' ? 'SMALL' : 'BIG');
+                const conf = Math.min(margin*100, 85);
+                const num = predictNumber(historyArr, pred);
+                return { prediction: pred, confidence: conf, evidence: total, number: num, risk: 'MEDIUM', regime: 'NORMAL', strategy: 'ensemble' };
+            }
+
+            // We have enough samples for this streak length
+            const margin = Math.abs(contProb - revProb);
+            if (margin < 0.12) {
+                return { prediction: 'NO_BET', confidence: margin*100, evidence: sampleSize, number: 5, risk: 'HIGH', regime: 'NORMAL', strategy: 'ensemble' };
+            }
+            const pred = contProb > revProb ? direction : (direction === 'BIG' ? 'SMALL' : 'BIG');
+            const conf = Math.min(margin*100, 95);
+            const num = predictNumber(historyArr, pred);
+
+            // Determine best strategy based on evidence
+            let bestStrat = 'ensemble';
+            let bestEv = -1;
+            for (const s of STRATEGIES) {
+                if (!strategyStats[s].retired && strategyStats[s].evidence > bestEv) {
+                    bestEv = strategyStats[s].evidence;
+                    bestStrat = s;
+                }
+            }
+
+            // Regime detection
+            const regime = detectRegime(historyArr);
+            const risk = calcRisk(conf, 0.5, length, regime.state);
+
+            return { prediction: pred, confidence: conf, evidence: sampleSize, number: num, risk: risk.level, regime: regime.state, strategy: bestStrat };
+        }
+
+        // ─── PREDICT NUMBER ───
+        function predictNumber(historyArr, size) {
+            if (historyArr.length < 5) return 5;
+            const nums = historyArr.slice(0, 15).map(r => r.number);
+            const filtered = size === 'BIG' ? nums.filter(n => n >= 5) : nums.filter(n => n < 5);
+            if (!filtered.length) return size === 'BIG' ? 7 : 2;
+            return mode(filtered);
+        }
+
+        // ─── REGIME DETECTION ───
+        function detectRegime(historyArr) {
+            if (historyArr.length < 20) return { state: 'NORMAL', confidence: 0.5 };
+            const sizes = historyArr.slice(0, 20).map(r => r.size);
+            let maxStreak = 1, cur = 1;
+            for (let i = 1; i < sizes.length; i++) {
+                if (sizes[i] === sizes[i-1]) cur++;
+                else { maxStreak = Math.max(maxStreak, cur); cur = 1; }
+            }
+            maxStreak = Math.max(maxStreak, cur);
+            // volatility
+            let vol = 0;
+            for (let i = 1; i < Math.min(historyArr.length, 20); i++) {
+                vol += Math.abs(historyArr[i].number - historyArr[i-1].number);
+            }
+            vol = vol / Math.min(20, historyArr.length-1) / 9;
+            // entropy
+            const bigs = sizes.filter(s => s === 'BIG').length / sizes.length;
+            const ent = -bigs * Math.log2(bigs+0.001) - (1-bigs) * Math.log2(1-bigs+0.001);
+
+            let state = 'NORMAL', conf = 0.55;
+            if (maxStreak >= 5 && vol < 0.4) { state = 'TRENDING'; conf = 0.7; }
+            else if (vol > 0.65) { state = 'VOLATILE'; conf = 0.7; }
+            else if (ent > 0.9) { state = 'RANDOM'; conf = 0.75; }
+            else if (maxStreak >= 3 && vol < 0.5) { state = 'CYCLIC'; conf = 0.6; }
+
+            if (state !== marketRegime.state && Date.now() - lastRegimeChange > 120000) {
+                lastRegimeChange = Date.now();
+                marketRegime = { state, confidence: conf };
+            } else {
+                marketRegime.confidence = marketRegime.confidence * 0.8 + conf * 0.2;
+            }
+            return marketRegime;
+        }
+
+        // ─── RISK ───
+        function calcRisk(confidence, volatility, streak, regime) {
+            let score = 40 + (100 - confidence) * 0.4 + volatility * 25;
+            if (streak > 4) score += 10;
+            if (streak > 7) score += 10;
+            if (regime === 'VOLATILE') score += 15;
+            if (regime === 'RANDOM') score += 20;
+            score = clamp(score, 8, 96);
+            if (score < 35) return { level: 'LOW', advice: 'Favorable' };
+            if (score < 65) return { level: 'MEDIUM', advice: 'Moderate' };
+            return { level: 'HIGH', advice: 'Unfavorable' };
+        }
+
+        // ─── UPDATE STRATEGY EVIDENCE ───
+        function updateStrategyEvidence(strategy, correct, confidence, regime) {
+            const s = strategyStats[strategy];
+            if (!s || s.retired) return;
+            s.samples++;
+            s.performance.push(correct ? 1 : 0);
+            if (s.performance.length > 200) s.performance.shift();
+            if (!s.regimePerformance[regime]) s.regimePerformance[regime] = [];
+            s.regimePerformance[regime].push(correct ? 1 : 0);
+            if (s.regimePerformance[regime].length > 100) s.regimePerformance[regime].shift();
+
+            const recent = s.performance.slice(-50);
+            const acc = recent.length ? recent.reduce((a,b) => a+b, 0) / recent.length : 0.5;
+            s.evidence = clamp((acc - 0.5) * 2 + 0.5, 0.1, 0.95);
+
+            // p-value
+            if (s.performance.length >= MIN_SAMPLES) {
+                const m = mean(s.performance);
+                const se = Math.sqrt(s.performance.reduce((sum, v) => sum + (v - m) ** 2, 0) / (s.performance.length - 1) / s.performance.length);
+                const t = (m - 0.5) / (se || 0.001);
+                const p = 2 * (1 - 0.5 * (1 + t / Math.sqrt(t * t + s.performance.length)));
+                s.pValue = clamp(p, 0, 1);
+            }
+
+            if (s.performance.length >= MIN_SAMPLES && s.pValue < SIGNIFICANCE_THRESHOLD) {
+                s.weight = clamp(s.evidence * 1.5, 0.3, 2.5);
+            } else {
+                s.weight = 0.8 + 0.4 * s.evidence;
+            }
+
+            // Normalize active weights
+            const active = Object.keys(strategyStats).filter(k => !strategyStats[k].retired);
+            const total = active.reduce((sum, k) => sum + strategyStats[k].weight, 0);
+            for (const k of active) strategyStats[k].weight /= total;
+
+            totalEvidenceScore = active.reduce((sum, k) => sum + strategyStats[k].evidence, 0) / (active.length || 1);
+        }
+
+        // ─── MANAGE RULES ───
+        function manageRules() {
+            const active = Object.keys(strategyStats).filter(k => !strategyStats[k].retired);
+            for (const s of active) {
+                const stats = strategyStats[s];
+                if (stats.performance.length >= MIN_SAMPLES) {
+                    const acc = stats.performance.reduce((a,b) => a+b, 0) / stats.performance.length;
+                    if (stats.pValue > 0.1 && acc < 0.45) {
+                        stats.retired = true;
+                    }
+                }
+            }
+            // Reactivate if improved
+            for (const s of Object.keys(strategyStats)) {
+                if (strategyStats[s].retired && strategyStats[s].performance.length >= MIN_SAMPLES) {
+                    const acc = strategyStats[s].performance.reduce((a,b) => a+b, 0) / strategyStats[s].performance.length;
+                    if (acc > 0.5 && strategyStats[s].pValue < 0.05) {
+                        strategyStats[s].retired = false;
+                    }
+                }
+            }
+
+            rules = patterns.slice(0, 20).map(p => ({
+                id: p.key,
+                condition: `Pattern ${p.key}`,
+                action: p.nextBig > p.nextSmall ? 'BIG' : 'SMALL',
+                confidence: p.confidence,
+                evidence: clamp(p.confidence * 0.7 + 0.3, 0.3, 0.95),
+                active: (p.nextBig + p.nextSmall) >= 3
+            }));
+            rules.sort((a,b) => b.evidence - a.evidence);
+        }
+
+        // ─── PATTERN LEARNING ───
+        function learnPatterns(historyArr) {
+            if (historyArr.length < 10) return;
+            const sizes = historyArr.map(r => r.size);
+            for (let len = 2; len <= 4; len++) {
+                for (let i = 0; i <= sizes.length - len; i++) {
+                    const key = sizes.slice(i, i+len).join(',');
+                    let cnt = 0;
+                    for (let j = 0; j <= sizes.length - len; j++) {
+                        if (sizes.slice(j, j+len).join(',') === key) cnt++;
+                    }
+                    if (cnt >= 2) {
+                        let nextBig = 0, nextSmall = 0;
+                        for (let j = 0; j <= sizes.length - len - 1; j++) {
+                            if (sizes.slice(j, j+len).join(',') === key) {
+                                if (sizes[j+len] === 'BIG') nextBig++;
+                                else nextSmall++;
+                            }
+                        }
+                        const conf = Math.max(nextBig, nextSmall) / (nextBig + nextSmall + 1e-6);
+                        const existing = patterns.find(p => p.key === key);
+                        if (existing) {
+                            existing.nextBig = nextBig;
+                            existing.nextSmall = nextSmall;
+                            existing.confidence = conf;
+                            existing.count = cnt;
+                        } else {
+                            patterns.push({ key, sequence: sizes.slice(i, i+len), count: cnt, nextBig, nextSmall, confidence: conf });
+                        }
+                    }
+                }
+            }
+            patterns.sort((a,b) => b.confidence - a.confidence);
+            if (patterns.length > 80) patterns = patterns.slice(0, 80);
+        }
+
+        // ─── ADD OUTCOME ───
+        function addOutcome(outcome, number, period) {
+            if (outcome !== 'BIG' && outcome !== 'SMALL') return;
+            const entry = { period: period || `P${history.length+1}`, number: number || (outcome === 'BIG' ? 7 : 2), size: outcome };
+            history.unshift(entry);
+            if (history.length > MAX_HISTORY) history.pop();
+
+            // Update streak data
+            if (history.length >= 2) {
+                const last = history[1]?.size;
+                const current = history[0].size;
+                if (last === current) {
+                    // continuation – we'll record when it breaks
+                } else {
+                    // previous streak broke – record it
+                    const prevStreak = getCurrentStreak(history.slice(1));
+                    if (prevStreak.length > 0) {
+                        recordStreak(prevStreak.length, prevStreak.direction, false);
+                    }
+                }
+                // update transitions
+                if (last) {
+                    transitions[last][current] = (transitions[last][current] || 0) + 1;
+                }
+            }
+
+            // If we had a prediction, check correctness
+            if (lastPrediction && lastPeriod !== period) {
+                const correct = (lastPrediction === outcome);
+                if (correct) wins++;
+                else losses++;
+                // Update strategies
+                for (const s of STRATEGIES) {
+                    // For simplicity, we only update the strategy that was actually used
+                    if (s === lastStrategy) {
+                        updateStrategyEvidence(s, correct, lastConfidence, lastRegime);
+                    } else {
+                        // also update others with a weighted correction (optional)
+                        // For now, we update all with the same outcome but using their own evidence? 
+                        // We'll just update the chosen one for simplicity.
+                    }
+                }
+                // Store prediction record
+                predictions.unshift({
+                    period: lastPeriod,
+                    predicted: lastPrediction,
+                    number: lastPredictionNumber,
+                    actual: outcome,
+                    actualNumber: number,
+                    confidence: lastConfidence,
+                    risk: lastRisk,
+                    regime: lastRegime,
+                    strategy: lastStrategy,
+                    correct
+                });
+                if (predictions.length > MAX_HISTORY) predictions.pop();
+
+                manageRules();
+                learnPatterns(history);
+            }
+
+            lastPeriod = period || `P${history.length}`;
+
+            // Run prediction
+            if (history.length >= 5) {
+                const pred = predict(history);
+                lastPrediction = pred.prediction;
+                lastPredictionNumber = pred.number;
+                lastConfidence = pred.confidence;
+                lastRisk = pred.risk;
+                lastRegime = pred.regime;
+                lastStrategy = pred.strategy;
+                updateUI(pred);
+            }
+            updateStats();
+        }
+
+        // ─── UI UPDATE ───
+        function updateUI(pred) {
+            const predEl = $('predictionDisplay');
+            if (predEl) {
+                predEl.textContent = pred.prediction || 'NO BET';
+                const cls = pred.prediction === 'BIG' ? 'big' : pred.prediction === 'SMALL' ? 'small' : 'no-bet';
+                predEl.className = `prediction-value ${cls}`;
+            }
+            setText('numberDisplay', pred.number !== undefined ? pred.number : '--');
+            const confEl = $('confidenceDisplay');
+            if (confEl) {
+                confEl.textContent = pred.confidence ? `${pred.confidence.toFixed(0)}%` : '0%';
+                const cls = pred.confidence > 65 ? 'high' : pred.confidence > 45 ? 'medium' : 'low';
+                confEl.className = `value ${cls}`;
+            }
+            const fill = $('confidenceFill');
+            if (fill) fill.style.width = `${pred.confidence || 0}%`;
+            setText('riskDisplay', pred.risk || '--');
+            const regimeEl = $('regimeDisplay');
+            if (regimeEl) {
+                regimeEl.textContent = pred.regime || 'NORMAL';
+                regimeEl.className = `regime-indicator regime-${(pred.regime || 'normal').toLowerCase()}`;
+            }
+            setText('strategyDisplay', (pred.strategy || 'ensemble').toUpperCase());
+            setText('evidenceDisplay', `⚖️ Evidence Score: ${(totalEvidenceScore*100).toFixed(0)}%`);
+            if (history.length) {
+                setText('currentPeriodLabel', `Period: ${history[0].period}`);
+                setText('periodDisplay', `Period: ${history[0].period}`);
+            }
+
+            // Market badges
+            const states = ['TRENDING','VOLATILE','RANDOM','CYCLIC','NORMAL'];
+            const badgeHtml = states.map(s =>
+                `<span class="market-badge ${s === pred.regime ? 'active' : ''}">${s}</span>`
+            ).join('');
+            setHTML('marketBadges', badgeHtml);
+            setText('marketDetail', `Confidence: ${(marketRegime.confidence*100).toFixed(0)}%`);
+
+            // Strategy pills
+            const sorted = Object.entries(strategyStats).sort((a,b) => b[1].evidence - a[1].evidence);
+            const pills = sorted.map(([k, v]) => {
+                const isActive = !v.retired;
+                const isBest = k === pred.strategy;
+                const retiredClass = v.retired ? 'retired' : '';
+                const bestClass = isBest ? 'best' : '';
+                return `<span class="pill ${bestClass} ${retiredClass}">
+                            ${k.toUpperCase()}
+                            <span class="bar"><span class="fill" style="width:${v.evidence*100}%"></span></span>
+                            ${(v.evidence*100).toFixed(0)}%
+                            ${isActive ? '✅' : '⏳'}
+                        </span>`;
+            }).join('');
+            setHTML('strategyPills', pills);
+
+            // Explanation
+            const exp = $('explanationBox');
+            if (exp) {
+                const lines = [];
+                lines.push(`╔══════════════════════════════════════════════╗`);
+                lines.push(`║     ADAPTIVE ENGINE — EXPLANATION            ║`);
+                lines.push(`╚══════════════════════════════════════════════╝`);
+                lines.push(`Regime: ${pred.regime || 'NORMAL'} | Confidence: ${pred.confidence?.toFixed(0)||0}%`);
+                const cur = getCurrentStreak(history);
+                lines.push(`Streak: ${cur.length} (${cur.direction || '--'})`);
+                lines.push(`Prediction: ${pred.prediction} → ${pred.number}`);
+                lines.push(`Risk: ${pred.risk} | Strategy: ${pred.strategy.toUpperCase()}`);
+                lines.push(`Evidence: ${(totalEvidenceScore*100).toFixed(0)}% | Samples: ${pred.evidence||0}`);
+                const sorted2 = Object.entries(strategyStats).sort((a,b) => b[1].evidence - a[1].evidence);
+                for (const [s,data] of sorted2.slice(0,3)) {
+                    const acc = data.performance.slice(-20).reduce((a,b) => a+b, 0) / Math.min(20, data.performance.length || 1);
+                    lines.push(`  ${s.toUpperCase()}: ev=${(data.evidence*100).toFixed(0)}% acc=${(acc*100||0).toFixed(0)}%${s===pred.strategy?' ←':''}`);
+                }
+                exp.textContent = lines.join('\n');
+            }
+            setText('lastUpdateLabel', `Last update: ${new Date().toLocaleTimeString()}`);
+            updateHistoryTables();
+            updateLearningStats();
+            updateAnalyticsStats();
+        }
+
+        function updateStats() {
+            const total = wins + losses;
+            const acc = total > 0 ? (wins / total * 100) : 0;
+            setText('statWins', wins);
+            setText('statLosses', losses);
+            setText('statAccuracy', `${acc.toFixed(1)}%`);
+            let streak = 0;
+            for (const p of predictions) { if (p.correct) streak++; else break; }
+            setText('statStreak', streak);
+            setText('statPatterns', patterns.length);
+            setText('statEvidence', (totalEvidenceScore*100).toFixed(0));
+        }
+
+        function updateHistoryTables() {
+            const render = (data) => data.map(p =>
+                `<tr><td>${p.period}</td><td>${p.predicted}</td><td>${p.actual||'--'}</td><td>${p.confidence?p.confidence.toFixed(0)+'%':'--'}</td><td class="${p.correct===undefined?'':p.correct?'win':'loss'}">${p.correct===undefined?'⏳':p.correct?'✅ WIN':'❌ LOSS'}</td></tr>`
+            ).join('');
+            setHTML('historyPreview', render(predictions.slice(0, 20)));
+            setHTML('historyFull', render(predictions.slice(0, 100)));
+        }
+
+        function updateLearningStats() {
+            const active = Object.keys(strategyStats).filter(k => !strategyStats[k].retired);
+            const retired = Object.keys(strategyStats).filter(k => strategyStats[k].retired);
+            const best = Object.entries(strategyStats).sort((a,b) => b[1].evidence - a[1].evidence)[0];
+            const html = `
+                <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:12px;"><div style="color:#a8a8b3;font-size:12px;">Active</div><div style="font-size:24px;font-weight:700;color:#34d399;">${active.length}</div></div>
+                <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:12px;"><div style="color:#a8a8b3;font-size:12px;">Retired</div><div style="font-size:24px;font-weight:700;color:#ff5252;">${retired.length}</div></div>
+                <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:12px;"><div style="color:#a8a8b3;font-size:12px;">Best</div><div style="font-size:24px;font-weight:700;color:#fbbf24;">${best?best[0].toUpperCase():'--'}</div></div>
+                <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:12px;"><div style="color:#a8a8b3;font-size:12px;">Samples</div><div style="font-size:24px;font-weight:700;color:#60a5fa;">${Math.min(1000, predictions.length)}</div></div>
+            `;
+            setHTML('learningStats', html);
+
+            const rulesHtml = rules.filter(r => r.active).slice(0, 15).map(r =>
+                `<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="color:#fbbf24;">${r.condition}</span> → ${r.action} <span style="color:#a8a8b3;font-size:11px;">ev:${(r.evidence*100).toFixed(0)}%</span></div>`
+            ).join('');
+            setHTML('rulesList', rulesHtml || '<div style="color:#a8a8b3;">No active rules.</div>');
+
+            const patHtml = patterns.slice(0, 15).map(p =>
+                `<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="color:#60a5fa;">${p.key}</span> → ${p.nextBig > p.nextSmall ? 'BIG' : 'SMALL'} <span style="color:#a8a8b3;font-size:11px;">conf:${(p.confidence*100).toFixed(0)}%</span></div>`
+            ).join('');
+            setHTML('patternList', patHtml || '<div style="color:#a8a8b3;">No patterns.</div>');
+        }
+
+        function updateAnalyticsStats() {
+            const recent = predictions.slice(0, 30);
+            const accs = recent.map(p => p.correct ? 1 : 0);
+            const trend = accs.map((v, i) => {
+                const window = accs.slice(Math.max(0, i-9), i+1);
+                return (window.reduce((a,b) => a+b, 0) / window.length * 100).toFixed(0);
+            });
+            const accHtml = `<div style="display:flex;gap:3px;flex-wrap:wrap;">${trend.map(v => `<span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${v>60?'#34d399':v>40?'#fbbf24':'#ff5252'};" title="${v}%"></span>`).join('')}</div>`;
+            setHTML('accChart', accHtml + `<div style="margin-top:4px;font-size:11px;color:#666;">Last ${trend.length}</div>`);
+
+            const sorted = Object.entries(strategyStats).sort((a,b) => b[1].evidence - a[1].evidence);
+            const stratHtml = sorted.map(([k, v]) => {
+                const acc = v.performance.slice(-20).reduce((a,b) => a+b, 0) / Math.min(20, v.performance.length || 1);
+                return `<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.04);"><span>${k.toUpperCase()}${v.retired?' 🔒':''}</span><span style="color:${v.evidence>0.6?'#34d399':'#fbbf24'};">ev:${(v.evidence*100).toFixed(0)}% (${(acc*100||0).toFixed(0)}%)</span></div>`;
+            }).join('');
+            setHTML('stratChart', stratHtml);
+
+            const total = wins + losses;
+            const acc = total > 0 ? (wins / total * 100) : 0;
+            const statsHtml = `
+                <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:10px;text-align:center;"><div style="color:#a8a8b3;font-size:11px;">Total</div><div style="font-size:20px;font-weight:700;">${total}</div></div>
+                <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:10px;text-align:center;"><div style="color:#a8a8b3;font-size:11px;">Win Rate</div><div style="font-size:20px;font-weight:700;color:#34d399;">${acc.toFixed(1)}%</div></div>
+                <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:10px;text-align:center;"><div style="color:#a8a8b3;font-size:11px;">Evidence</div><div style="font-size:20px;font-weight:700;color:#fbbf24;">${(totalEvidenceScore*100).toFixed(0)}%</div></div>
+                <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:10px;text-align:center;"><div style="color:#a8a8b3;font-size:11px;">Regime</div><div style="font-size:20px;font-weight:700;color:#60a5fa;">${lastRegime}</div></div>
+            `;
+            setHTML('analyticsStats', statsHtml);
+        }
+
+        // ─── MOCK DATA ───
+        function generateMockRounds(count = 30) {
+            const data = [];
+            let last = 5;
+            for (let i = 0; i < count; i++) {
+                let n;
+                if (Math.random() < 0.25 && i > 2) {
+                    n = last + (Math.random() < 0.5 ? 1 : -1);
+                    n = clamp(n, 0, 9);
+                } else {
+                    n = Math.floor(Math.random() * 10);
+                }
+                if (Math.random() < 0.08) n = last;
+                last = n;
+                data.push({
+                    period: `MOCK_${String(i).padStart(4,'0')}`,
+                    number: n,
+                    size: getSize(n)
+                });
+            }
+            return data;
+        }
+
+        // ─── NAVIGATION ───
         function navigate(page) {
             document.querySelectorAll('.main > section').forEach(el => el.style.display = 'none');
-            const target = document.getElementById(`page-${page}`);
+            const target = $(`page-${page}`);
             if (target) target.style.display = 'block';
             document.querySelectorAll('.sidebar nav a, .sidebar-mobile a').forEach(el => {
                 el.classList.toggle('active', el.dataset.page === page);
             });
-            const sub = document.getElementById('pageSubtitle');
-            if (sub) sub.textContent = { dashboard: 'ML Pipeline', history: 'All predictions',
-                analytics: 'Performance & statistics', learning: 'ML Status', admin: 'System controls' } [page] || '';
+            const sub = $('pageSubtitle');
+            if (sub) sub.textContent = {
+                dashboard: 'Adaptive Decision Engine',
+                history: 'All predictions',
+                analytics: 'Performance & statistics',
+                learning: 'Evidence-based learning',
+                admin: 'System controls'
+            } [page] || '';
         }
 
-        document.querySelectorAll('.sidebar nav a, .sidebar-mobile a').forEach(el => {
-            el.addEventListener('click', (e) => {
-                e.preventDefault();
-                navigate(el.dataset.page);
-            });
-        });
+        // ─── EXPORT ───
+        function exportJSON() {
+            const data = {
+                timestamp: new Date().toISOString(),
+                stats: { wins, losses, accuracy: (wins+losses)?(wins/(wins+losses)*100):0 },
+                predictions: predictions.slice(0, 100),
+                patterns,
+                rules,
+                strategyStats,
+                evidenceScore: totalEvidenceScore,
+                streakData
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `streakai_${new Date().toISOString().slice(0,19)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
 
-        // Admin key enter
-        document.getElementById('adminKeyInput')?.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') loadAdminData();
-        });
-    </script>
+        function exportCSV() {
+            let csv = 'Period,Prediction,Number,Actual,ActualNumber,Confidence,Risk,Regime,Strategy,Result\n';
+            for (const p of predictions) {
+                csv += `${p.period},${p.predicted},${p.number||'--'},${p.actual||'--'},${p.actualNumber||'--'},${p.confidence?.toFixed(0)||'--'},${p.risk||'--'},${p.regime||'--'},${p.strategy||'--'},${p.correct===undefined?'⏳':p.correct?'WIN':'LOSS'}\n`;
+            }
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `streakai_history_${new Date().toISOString().slice(0,19)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function resetAll() {
+            if (!confirm('Reset all data?')) return;
+            history = [];
+            predictions = [];
+            wins = 0; losses = 0;
+            patterns = [];
+            rules = [];
+            streakData = {};
+            totalStreakSamples = 0;
+            transitions = { BIG: { BIG: 0, SMALL: 0 }, SMALL: { BIG: 0, SMALL: 0 } };
+            for (const s of STRATEGIES) {
+                strategyStats[s] = { weight: 1.0, evidence: 0.5, samples: 0, pValue: 0.5, retired: false, performance: [], regimePerformance: {} };
+            }
+            totalEvidenceScore = 0.5;
+            lastPrediction = null;
+            lastConfidence = 0;
+            lastPeriod = null;
+            updateStats();
+            updateLearningStats();
+            updateAnalyticsStats();
+            updateHistoryTables();
+            const exp = $('explanationBox');
+            if (exp) exp.textContent = '🧹 Reset complete.';
+            const logs = $('adminLogs');
+            if (logs) logs.innerHTML = '<div>🔄 Reset at ' + new Date().toLocaleTimeString() + '</div>';
+        }
+
+        // ─── SAVE/LOAD STATE ───
+        function saveState() {
+            try {
+                const data = {
+                    history: history.slice(0, 200),
+                    predictions: predictions.slice(0, 100),
+                    wins, losses,
+                    patterns,
+                    rules,
+                    streakData,
+                    transitions,
+                    strategyStats,
+                    totalEvidenceScore,
+                    lastPrediction, lastConfidence, lastPeriod, lastRegime
+                };
+                localStorage.setItem('streakai_v5', JSON.stringify(data));
+            } catch (e) {}
+        }
+
+        function loadState() {
+            try {
+                const raw = localStorage.getItem('streakai_v5');
+                if (raw) {
+                    const data = JSON.parse(raw);
+                    if (data.history) history = data.history;
+                    if (data.predictions) predictions = data.predictions;
+                    if (data.wins !== undefined) wins = data.wins;
+                    if (data.losses !== undefined) losses = data.losses;
+                    if (data.patterns) patterns = data.patterns;
+                    if (data.rules) rules = data.rules;
+                    if (data.streakData) streakData = data.streakData;
+                    if (data.transitions) transitions = data.transitions;
+                    if (data.strategyStats) strategyStats = data.strategyStats;
+                    if (data.totalEvidenceScore !== undefined) totalEvidenceScore = data.totalEvidenceScore;
+                    if (data.lastPrediction) lastPrediction = data.lastPrediction;
+                    if (data.lastConfidence) lastConfidence = data.lastConfidence;
+                    if (data.lastPeriod) lastPeriod = data.lastPeriod;
+                    if (data.lastRegime) lastRegime = data.lastRegime;
+                    return true;
+                }
+            } catch (e) {}
+            return false;
+        }
+
+        // ─── API POLLING ───
+        async function fetchData() {
+            try {
+                const resp = await fetch('https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json?t='+Date.now());
+                if (!resp.ok) return null;
+                const json = await resp.json();
+                if (json?.data?.list?.length) {
+                    return json.data.list.map(item => ({
+                        period: item.issueNumber,
+                        number: parseInt(item.number),
+                        size: getSize(parseInt(item.number))
+                    }));
+                }
+            } catch (e) {}
+            return null;
+        }
+
+        // ─── MAIN LOOP ───
+        async function mainLoop() {
+            let data = await fetchData();
+            if (!data || !data.length) {
+                // fallback mock
+                data = generateMockRounds(5);
+            }
+            if (data && data.length) {
+                const latest = data[0];
+                if (latest.period !== lastPeriod) {
+                    // Add all new outcomes
+                    for (const item of data) {
+                        if (item.period === lastPeriod) break;
+                        addOutcome(item.size, item.number, item.period);
+                    }
+                } else {
+                    // just update history if needed
+                    if (history.length < 2) {
+                        for (const item of data.slice(0, 20)) {
+                            addOutcome(item.size, item.number, item.period);
+                        }
+                    }
+                }
+            }
+            // timer
+            const sec = 60 - (Math.floor(Date.now() / 1000) % 60);
+            setText('timerDisplay', `⏱️ ${String(sec).padStart(2,'0')}s`);
+            setTimeout(mainLoop, 5000);
+        }
+
+        // ─── INIT ───
+        function init() {
+            console.log('StreakAI Adaptive Engine starting...');
+            const loaded = loadState();
+            if (!loaded) {
+                // seed with some mock data
+                const mock = generateMockRounds(30);
+                for (const item of mock) {
+                    addOutcome(item.size, item.number, item.period);
+                }
+            } else {
+                // rebuild internal structures from history
+                rebuildStreakData(history);
+                updateStats();
+                updateHistoryTables();
+                updateLearningStats();
+                updateAnalyticsStats();
+                // generate initial prediction if we have data
+                if (history.length >= 5) {
+                    const pred = predict(history);
+                    lastPrediction = pred.prediction;
+                    lastPredictionNumber = pred.number;
+                    lastConfidence = pred.confidence;
+                    lastRisk = pred.risk;
+                    lastRegime = pred.regime;
+                    lastStrategy = pred.strategy;
+                    updateUI(pred);
+                }
+            }
+
+            navigate('dashboard');
+
+            // Event listeners
+            document.querySelectorAll('.sidebar nav a, .sidebar-mobile a').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    navigate(el.dataset.page);
+                });
+            });
+
+            document.getElementById('btnBig').addEventListener('click', () => {
+                const n = Math.floor(Math.random() * 5) + 5; // 5-9
+                const period = `MANUAL_${Date.now()}`;
+                addOutcome('BIG', n, period);
+                updateStats();
+            });
+            document.getElementById('btnSmall').addEventListener('click', () => {
+                const n = Math.floor(Math.random() * 5); // 0-4
+                const period = `MANUAL_${Date.now()}`;
+                addOutcome('SMALL', n, period);
+                updateStats();
+            });
+            document.getElementById('forceBtn').addEventListener('click', async () => {
+                const data = await fetchData();
+                if (data && data.length) {
+                    for (const item of data) {
+                        if (item.period !== lastPeriod) {
+                            addOutcome(item.size, item.number, item.period);
+                        }
+                    }
+                } else {
+                    const mock = generateMockRounds(5);
+                    for (const item of mock) addOutcome(item.size, item.number, item.period);
+                }
+                updateStats();
+            });
+            document.getElementById('exportBtn').addEventListener('click', exportJSON);
+            document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
+            document.getElementById('resetBtn').addEventListener('click', resetAll);
+
+            document.getElementById('retrainBtn').addEventListener('click', () => {
+                for (const s of STRATEGIES) {
+                    strategyStats[s].performance = [];
+                    strategyStats[s].samples = 0;
+                    strategyStats[s].evidence = 0.5;
+                    strategyStats[s].retired = false;
+                    strategyStats[s].weight = 1.0;
+                }
+                totalEvidenceScore = 0.5;
+                updateStats();
+                updateLearningStats();
+                alert('🔄 Retrained.');
+            });
+            document.getElementById('optimizeBtn').addEventListener('click', () => {
+                manageRules();
+                updateStats();
+                updateLearningStats();
+                alert('⚡ Optimized.');
+            });
+            document.getElementById('backupBtn').addEventListener('click', () => {
+                saveState();
+                alert('💾 Saved to localStorage.');
+            });
+            document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+                if (confirm('Clear prediction history?')) {
+                    predictions = [];
+                    wins = 0; losses = 0;
+                    updateStats();
+                    updateHistoryTables();
+                }
+            });
+
+            // Auto-save every 30s
+            setInterval(saveState, 30000);
+            // Start main loop
+            mainLoop();
+        }
+
+        // Run
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
+</script>
 </body>
-</html>
+</html> 
