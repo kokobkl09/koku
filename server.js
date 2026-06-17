@@ -5,10 +5,9 @@ const sqlite3 = require('sqlite3').verbose();
 const { open } = require('sqlite');
 const fs = require('fs');
 const archiver = require('archiver');
-const cron = require('node-cron');
 
 // ─── Config ───
-const BOT_TOKEN = process.env.BOT_TOKEN || '8998777617:AAGqM6Uy6wWNFjKJHJFWVQb8VaLzNnvyn6s'; // Set in Railway env, not hardcoded
+const BOT_TOKEN = process.env.BOT_TOKEN || '8998777617:AAGqM6Uy6wWNFjKJHJFWVQb8VaLzNnvyn6s';
 const ADMIN_KEY = process.env.ADMIN_KEY || '7811286022';
 const PORT = process.env.PORT || 3000;
 const API_URL = 'https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json';
@@ -18,7 +17,7 @@ const app = express();
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// ─── Health Check (required for Railway) ───
+// ─── Health Check ───
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
@@ -56,7 +55,7 @@ let db;
   }
 })();
 
-// ─── Background Data Collector ───
+// ─── Background Collector ───
 async function collectAndPredict() {
   try {
     const resp = await fetch(API_URL + `?t=${Date.now()}`);
@@ -126,10 +125,11 @@ function mode(arr) {
   return r;
 }
 
-// ─── Schedule collector every 60 seconds ───
-cron.schedule('* * * * *', () => {
-  collectAndPredict().catch(err => console.error('Cron error:', err));
-});
+// ─── Run collector every 60 seconds ───
+setInterval(() => {
+  collectAndPredict().catch(err => console.error('Interval error:', err));
+}, 60000);
+// Run immediately on start
 setTimeout(collectAndPredict, 5000);
 
 // ─── API Endpoints ───
@@ -177,7 +177,7 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// ─── Telegram Bot (only if token is set) ───
+// ─── Telegram Bot ───
 if (BOT_TOKEN) {
   const bot = new Telegraf(BOT_TOKEN);
 
