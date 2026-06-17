@@ -19,7 +19,7 @@ const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
 // Resend credentials (set these or use environment variables)
 const RESEND_API_KEY = process.env.RESEND_API_KEY || 're_3R13fyxC_6UStikC6Vsnn9RZECcqPYuUo';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'jurohan38@gmail.com';
-const FROM_EMAIL = process.env.FROM_EMAIL || 'StreakAI <alerts@jurohan38.resend.dev>';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'StreakAI <alerts@jurohan38@gmail.com>';
 
 // Engine constants
 const MIN_SAMPLES = 20;
