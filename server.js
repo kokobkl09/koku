@@ -8,8 +8,8 @@ const archiver = require('archiver');
 const cron = require('node-cron');
 
 // ─── Config ───
-const BOT_TOKEN = process.env.BOT_TOKEN || '8998777617:AAGqM6Uy6wWNFjKJHJFWVQb8VaLzNnvyn6s';
-const ADMIN_KEY = process.env.ADMIN_KEY || '7811286022'; // set in Railway env
+const BOT_TOKEN = process.env.BOT_TOKEN || '8998777617:AAGqM6Uy6wWNFjKJHJFWVQb8VaLzNnvyn6s'; // Set in Railway env, not hardcoded
+const ADMIN_KEY = process.env.ADMIN_KEY || '7811286022';
 const PORT = process.env.PORT || 3000;
 const API_URL = 'https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json';
 
@@ -18,39 +18,47 @@ const app = express();
 app.use(express.json());
 app.use(express.static(__dirname));
 
+// ─── Health Check (required for Railway) ───
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
 // ─── SQLite Database ───
 let db;
 (async () => {
-  db = await open({
-    filename: path.join(__dirname, 'data.sqlite'),
-    driver: sqlite3.Database
-  });
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS predictions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      period TEXT,
-      predicted TEXT,
-      actual TEXT,
-      predicted_number INTEGER,
-      actual_number INTEGER,
-      confidence REAL,
-      strategy TEXT,
-      correct INTEGER,
-      timestamp INTEGER
-    );
-    CREATE TABLE IF NOT EXISTS users (
-      chat_id INTEGER PRIMARY KEY,
-      first_start INTEGER,
-      last_active INTEGER
-    );
-  `);
-  console.log('✅ Database ready');
+  try {
+    db = await open({
+      filename: path.join(__dirname, 'data.sqlite'),
+      driver: sqlite3.Database
+    });
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS predictions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        period TEXT,
+        predicted TEXT,
+        actual TEXT,
+        predicted_number INTEGER,
+        actual_number INTEGER,
+        confidence REAL,
+        strategy TEXT,
+        correct INTEGER,
+        timestamp INTEGER
+      );
+      CREATE TABLE IF NOT EXISTS users (
+        chat_id INTEGER PRIMARY KEY,
+        first_start INTEGER,
+        last_active INTEGER
+      );
+    `);
+    console.log('✅ Database ready');
+  } catch (err) {
+    console.error('❌ Database error:', err.message);
+  }
 })();
 
 // ─── Background Data Collector ───
 async function collectAndPredict() {
   try {
-    // 1. Fetch latest data from API
     const resp = await fetch(API_URL + `?t=${Date.now()}`);
     if (!resp.ok) throw new Error('API fetch failed');
     const json = await resp.json();
@@ -62,11 +70,7 @@ async function collectAndPredict() {
       size: parseInt(item.number) >= 5 ? 'BIG' : 'SMALL'
     }));
 
-    // 2. Simple ML prediction (ensemble of 3 models)
-    // For brevity, I'll use a simplified version – you can plug in the full pipeline from index.html
     const prediction = runML(rounds);
-
-    // 3. Store prediction (actual will be updated when next round arrives)
     const latest = rounds[0];
     const existing = await db.get('SELECT * FROM predictions WHERE period = ?', latest.period);
     if (!existing) {
@@ -82,10 +86,8 @@ async function collectAndPredict() {
       console.log(`📊 New prediction: ${prediction.pred} (${prediction.number})`);
     }
 
-    // 4. Check if previous prediction can be validated (actual result available)
     const prev = await db.get('SELECT * FROM predictions WHERE period != ? AND actual IS NULL ORDER BY timestamp DESC LIMIT 1', latest.period);
     if (prev) {
-      // find the actual result for that period
       const actualRound = rounds.find(r => r.period === prev.period);
       if (actualRound) {
         const correct = prev.predicted === actualRound.size ? 1 : 0;
@@ -96,19 +98,16 @@ async function collectAndPredict() {
           correct,
           prev.id
         );
-        console.log(`✅ Validated prediction ${prev.period}: ${prev.predicted} → ${actualRound.size} (${correct ? 'WIN' : 'LOSS'})`);
+        console.log(`✅ Validated ${prev.period}: ${prev.predicted} → ${actualRound.size} (${correct ? 'WIN' : 'LOSS'})`);
       }
     }
-
   } catch (err) {
     console.error('Collector error:', err.message);
   }
 }
 
-// ─── Simplified ML (replace with your full pipeline) ───
 function runML(rounds) {
   if (rounds.length < 10) return { pred: 'BIG', number: 5, confidence: 50, strategy: 'fallback' };
-  // Simple trend following (just for demo – you can plug in the real ensemble)
   const recent = rounds.slice(0, 10);
   const bigCount = recent.filter(r => r.size === 'BIG').length;
   const pred = bigCount >= 5 ? 'BIG' : 'SMALL';
@@ -129,115 +128,107 @@ function mode(arr) {
 
 // ─── Schedule collector every 60 seconds ───
 cron.schedule('* * * * *', () => {
-  collectAndPredict();
+  collectAndPredict().catch(err => console.error('Cron error:', err));
 });
-// Run immediately on start
 setTimeout(collectAndPredict, 5000);
 
 // ─── API Endpoints ───
-
-// Public: get latest prediction (no history)
 app.get('/api/latest', async (req, res) => {
-  const row = await db.get('SELECT * FROM predictions ORDER BY timestamp DESC LIMIT 1');
-  if (!row) return res.json({ error: 'No predictions yet' });
-  res.json({
-    period: row.period,
-    predicted: row.predicted,
-    number: row.predicted_number,
-    confidence: row.confidence,
-    strategy: row.strategy
-  });
+  try {
+    const row = await db.get('SELECT * FROM predictions ORDER BY timestamp DESC LIMIT 1');
+    if (!row) return res.json({ error: 'No predictions yet' });
+    res.json({
+      period: row.period,
+      predicted: row.predicted,
+      number: row.predicted_number,
+      confidence: row.confidence,
+      strategy: row.strategy
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Admin: full history (requires admin key)
 app.get('/api/history', async (req, res) => {
   const key = req.query.key || req.headers['x-admin-key'];
   if (key !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
-  const rows = await db.all('SELECT * FROM predictions ORDER BY timestamp DESC');
-  res.json(rows);
+  try {
+    const rows = await db.all('SELECT * FROM predictions ORDER BY timestamp DESC');
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Admin: statistics
 app.get('/api/stats', async (req, res) => {
   const key = req.query.key || req.headers['x-admin-key'];
   if (key !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
-  const total = await db.get('SELECT COUNT(*) as count FROM predictions');
-  const correct = await db.get('SELECT COUNT(*) as count FROM predictions WHERE correct = 1');
-  const winLoss = {
-    total: total.count || 0,
-    wins: correct.count || 0,
-    losses: (total.count || 0) - (correct.count || 0),
-    accuracy: total.count ? ((correct.count / total.count) * 100).toFixed(1) : 0
-  };
-  res.json(winLoss);
+  try {
+    const total = await db.get('SELECT COUNT(*) as count FROM predictions');
+    const correct = await db.get('SELECT COUNT(*) as count FROM predictions WHERE correct = 1');
+    res.json({
+      total: total.count || 0,
+      wins: correct.count || 0,
+      losses: (total.count || 0) - (correct.count || 0),
+      accuracy: total.count ? ((correct.count / total.count) * 100).toFixed(1) : 0
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// ─── Telegram Bot ─── (same as before, but using db)
-const bot = new Telegraf(BOT_TOKEN);
+// ─── Telegram Bot (only if token is set) ───
+if (BOT_TOKEN) {
+  const bot = new Telegraf(BOT_TOKEN);
 
-bot.start(async (ctx) => {
-  const chatId = ctx.chat.id;
-  const now = Date.now();
-  await db.run('INSERT OR REPLACE INTO users (chat_id, first_start, last_active) VALUES (?, ?, ?)', chatId, now, now);
+  bot.start(async (ctx) => {
+    const chatId = ctx.chat.id;
+    const now = Date.now();
+    await db.run('INSERT OR REPLACE INTO users (chat_id, first_start, last_active) VALUES (?, ?, ?)', chatId, now, now);
+    const stats = await db.get('SELECT COUNT(*) as total, SUM(correct) as wins FROM predictions');
+    const total = stats.total || 0;
+    const wins = stats.wins || 0;
+    const acc = total ? (wins / total * 100).toFixed(1) : 0;
+    await ctx.replyWithMarkdown(`🤖 *KOKU AI Bot Activated*\n📊 *Total Predictions:* ${total}\n✅ *Wins:* ${wins}\n🎯 *Accuracy:* ${acc}%\n⏰ _I will send you a detailed report in 5 minutes._`);
+    setTimeout(async () => {
+      await fiveMinuteReport(chatId);
+    }, 5 * 60 * 1000);
+  });
 
-  const stats = await db.get('SELECT COUNT(*) as total, SUM(correct) as wins FROM predictions');
-  const total = stats.total || 0;
-  const wins = stats.wins || 0;
-  const acc = total ? (wins / total * 100).toFixed(1) : 0;
-
-  await ctx.replyWithMarkdown(`🤖 *KOKU AI Bot Activated*
-📊 *Total Predictions:* ${total}
-✅ *Wins:* ${wins}
-🎯 *Accuracy:* ${acc}%
-⏰ _I will send you a detailed report in 5 minutes._`);
-
-  setTimeout(async () => {
-    await fiveMinuteReport(chatId);
-  }, 5 * 60 * 1000);
-});
-
-// ─── 5‑minute report ───
-async function fiveMinuteReport(chatId) {
-  const fiveAgo = Date.now() - 5 * 60 * 1000;
-  const rows = await db.all('SELECT * FROM predictions WHERE timestamp >= ? ORDER BY timestamp ASC', fiveAgo);
-  if (!rows.length) {
-    await bot.telegram.sendMessage(chatId, '📊 *5‑Minute Report*\n\nNo predictions in the last 5 minutes.', { parse_mode: 'Markdown' });
-    return;
-  }
-  const total = rows.length;
-  const correct = rows.filter(r => r.correct === 1).length;
-  const accuracy = total ? (correct / total * 100).toFixed(1) : 0;
-  const first = rows[0];
-  const strategies = [...new Set(rows.map(r => r.strategy))];
-  let bestStrat = 'N/A', bestAcc = 0;
-  for (const s of strategies) {
-    const sRows = rows.filter(r => r.strategy === s);
-    const sCorrect = sRows.filter(r => r.correct === 1).length;
-    const acc = sCorrect / sRows.length * 100;
-    if (acc > bestAcc) { bestAcc = acc; bestStrat = s; }
-  }
-
-  await bot.telegram.sendMessage(chatId, `
+  async function fiveMinuteReport(chatId) {
+    const fiveAgo = Date.now() - 5 * 60 * 1000;
+    const rows = await db.all('SELECT * FROM predictions WHERE timestamp >= ? ORDER BY timestamp ASC', fiveAgo);
+    if (!rows.length) {
+      await bot.telegram.sendMessage(chatId, '📊 *5‑Minute Report*\n\nNo predictions in the last 5 minutes.', { parse_mode: 'Markdown' });
+      return;
+    }
+    const total = rows.length;
+    const correct = rows.filter(r => r.correct === 1).length;
+    const accuracy = total ? (correct / total * 100).toFixed(1) : 0;
+    const first = rows[0];
+    const strategies = [...new Set(rows.map(r => r.strategy))];
+    let bestStrat = 'N/A', bestAcc = 0;
+    for (const s of strategies) {
+      const sRows = rows.filter(r => r.strategy === s);
+      const sCorrect = sRows.filter(r => r.correct === 1).length;
+      const acc = sCorrect / sRows.length * 100;
+      if (acc > bestAcc) { bestAcc = acc; bestStrat = s; }
+    }
+    await bot.telegram.sendMessage(chatId, `
 📊 *5‑Minute Report*
-
 📈 *Total Predictions:* ${total}
 ✅ *Correct:* ${correct}
 🎯 *Accuracy:* ${accuracy}%
-
-🔮 *First Prediction:*
-   Period: ${first.period}
-   Predicted: ${first.predicted}
-   Actual: ${first.actual || 'waiting...'}
-
+🔮 *First Prediction:* ${first.period} → ${first.predicted} (actual: ${first.actual || 'waiting...'})
 🏆 *Best Strategy:* ${bestStrat} (${bestAcc.toFixed(1)}% accuracy)
-
 💡 *Insight:* ${accuracy > 60 ? 'Good performance!' : 'Consider adjusting strategy.'}
-  `, { parse_mode: 'Markdown' });
-}
+    `, { parse_mode: 'Markdown' });
+  }
 
-// ─── Other bot commands (data, stats, etc.) ───
-// ... (same as previous server.js, but reading from db)
+  bot.launch().then(() => console.log('🤖 Telegram bot started')).catch(err => console.error('Bot error:', err));
+} else {
+  console.log('⚠️ BOT_TOKEN not set – Telegram bot disabled.');
+}
 
 // ─── Start Server ───
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-bot.launch().then(() => console.log('🤖 Telegram bot started'));
